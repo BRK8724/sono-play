@@ -1,0 +1,878 @@
+[
+  {
+    "path": "screens/home.png",
+    "node": "87:190",
+    "type": "screen",
+    "bytes": 333542
+  },
+  {
+    "path": "raw/home_1.jpg",
+    "node": "87:190",
+    "type": "raw",
+    "bytes": 197653
+  },
+  {
+    "path": "raw/home_2.jpg",
+    "node": "87:190",
+    "type": "raw",
+    "bytes": 4226761
+  },
+  {
+    "path": "raw/home_3.png",
+    "node": "87:190",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/home_4.png",
+    "node": "87:190",
+    "type": "raw",
+    "bytes": 9619
+  },
+  {
+    "path": "raw/home_5.png",
+    "node": "87:190",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "svg/home_1.svg",
+    "node": "87:190",
+    "type": "svg",
+    "bytes": 1731
+  },
+  {
+    "path": "svg/home_2.svg",
+    "node": "87:190",
+    "type": "svg",
+    "bytes": 1395
+  },
+  {
+    "path": "screens/ready.png",
+    "node": "87:218",
+    "type": "screen",
+    "bytes": 173554
+  },
+  {
+    "path": "raw/ready_1.png",
+    "node": "87:218",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/ready_2.png",
+    "node": "87:218",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/ready_3.png",
+    "node": "87:218",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/ready_4.png",
+    "node": "87:218",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/ready_5.png",
+    "node": "87:218",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "raw/ready_6.png",
+    "node": "87:218",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "svg/ready_1.svg",
+    "node": "87:218",
+    "type": "svg",
+    "bytes": 496
+  },
+  {
+    "path": "screens/ready_2.png",
+    "node": "129:708",
+    "type": "screen",
+    "bytes": 173545
+  },
+  {
+    "path": "raw/ready_2_1.png",
+    "node": "129:708",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/ready_2_2.png",
+    "node": "129:708",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/ready_2_3.png",
+    "node": "129:708",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/ready_2_4.png",
+    "node": "129:708",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "raw/ready_2_5.png",
+    "node": "129:708",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/ready_2_6.png",
+    "node": "129:708",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "svg/ready_2_1.svg",
+    "node": "129:708",
+    "type": "svg",
+    "bytes": 496
+  },
+  {
+    "path": "screens/playing.png",
+    "node": "87:248",
+    "type": "screen",
+    "bytes": 201685
+  },
+  {
+    "path": "raw/playing_1.png",
+    "node": "87:248",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/playing_2.png",
+    "node": "87:248",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "raw/playing_3.png",
+    "node": "87:248",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/playing_4.png",
+    "node": "87:248",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/playing_5.png",
+    "node": "87:248",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "raw/playing_6.png",
+    "node": "87:248",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "screens/game_over_buy.png",
+    "node": "87:269",
+    "type": "screen",
+    "bytes": 176703
+  },
+  {
+    "path": "raw/game_over_buy_1.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/game_over_buy_2.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 1979412
+  },
+  {
+    "path": "raw/game_over_buy_3.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/game_over_buy_4.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/game_over_buy_5.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 65045
+  },
+  {
+    "path": "raw/game_over_buy_6.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/game_over_buy_7.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "raw/game_over_buy_8.png",
+    "node": "87:269",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "screens/game_over_retry.png",
+    "node": "129:657",
+    "type": "screen",
+    "bytes": 176087
+  },
+  {
+    "path": "raw/game_over_retry_1.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/game_over_retry_2.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/game_over_retry_3.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/game_over_retry_4.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 1979412
+  },
+  {
+    "path": "raw/game_over_retry_5.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/game_over_retry_6.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 65045
+  },
+  {
+    "path": "raw/game_over_retry_7.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "raw/game_over_retry_8.png",
+    "node": "129:657",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "screens/buy_attempts.png",
+    "node": "87:290",
+    "type": "screen",
+    "bytes": 146354
+  },
+  {
+    "path": "raw/buy_attempts_1.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/buy_attempts_2.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 465115
+  },
+  {
+    "path": "raw/buy_attempts_3.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 1979412
+  },
+  {
+    "path": "raw/buy_attempts_4.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/buy_attempts_5.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 65045
+  },
+  {
+    "path": "raw/buy_attempts_6.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/buy_attempts_7.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/buy_attempts_8.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 39988
+  },
+  {
+    "path": "raw/buy_attempts_9.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 177915
+  },
+  {
+    "path": "raw/buy_attempts_10.png",
+    "node": "87:290",
+    "type": "raw",
+    "bytes": 1046600
+  },
+  {
+    "path": "svg/buy_attempts_1.svg",
+    "node": "87:290",
+    "type": "svg",
+    "bytes": 255
+  },
+  {
+    "path": "svg/buy_attempts_2.svg",
+    "node": "87:290",
+    "type": "svg",
+    "bytes": 990
+  },
+  {
+    "path": "svg/buy_attempts_3.svg",
+    "node": "87:290",
+    "type": "svg",
+    "bytes": 970
+  },
+  {
+    "path": "screens/buy_attempts_2.png",
+    "node": "129:611",
+    "type": "screen",
+    "bytes": 146363
+  },
+  {
+    "path": "raw/buy_attempts_2_1.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/buy_attempts_2_2.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 1046600
+  },
+  {
+    "path": "raw/buy_attempts_2_3.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 1979412
+  },
+  {
+    "path": "raw/buy_attempts_2_4.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/buy_attempts_2_5.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 65045
+  },
+  {
+    "path": "raw/buy_attempts_2_6.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/buy_attempts_2_7.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/buy_attempts_2_8.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 39988
+  },
+  {
+    "path": "raw/buy_attempts_2_9.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 465115
+  },
+  {
+    "path": "raw/buy_attempts_2_10.png",
+    "node": "129:611",
+    "type": "raw",
+    "bytes": 177915
+  },
+  {
+    "path": "svg/buy_attempts_2_1.svg",
+    "node": "129:611",
+    "type": "svg",
+    "bytes": 255
+  },
+  {
+    "path": "svg/buy_attempts_2_2.svg",
+    "node": "129:611",
+    "type": "svg",
+    "bytes": 990
+  },
+  {
+    "path": "svg/buy_attempts_2_3.svg",
+    "node": "129:611",
+    "type": "svg",
+    "bytes": 970
+  },
+  {
+    "path": "screens/pin.png",
+    "node": "87:332",
+    "type": "screen",
+    "bytes": 58238
+  },
+  {
+    "path": "raw/pin_1.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 1979412
+  },
+  {
+    "path": "raw/pin_2.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 465115
+  },
+  {
+    "path": "raw/pin_3.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 177915
+  },
+  {
+    "path": "raw/pin_4.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 39988
+  },
+  {
+    "path": "raw/pin_5.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/pin_6.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/pin_7.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 1046600
+  },
+  {
+    "path": "raw/pin_8.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "raw/pin_9.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "raw/pin_10.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/pin_11.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 65045
+  },
+  {
+    "path": "raw/pin_12.png",
+    "node": "87:332",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "svg/pin_1.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 296
+  },
+  {
+    "path": "svg/pin_2.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 255
+  },
+  {
+    "path": "svg/pin_3.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 296
+  },
+  {
+    "path": "svg/pin_4.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 596
+  },
+  {
+    "path": "svg/pin_5.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 290
+  },
+  {
+    "path": "svg/pin_6.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 242
+  },
+  {
+    "path": "svg/pin_7.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 290
+  },
+  {
+    "path": "svg/pin_8.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 206
+  },
+  {
+    "path": "svg/pin_9.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 271
+  },
+  {
+    "path": "svg/pin_10.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 354
+  },
+  {
+    "path": "svg/pin_11.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 328
+  },
+  {
+    "path": "svg/pin_12.svg",
+    "node": "87:332",
+    "type": "svg",
+    "bytes": 206
+  },
+  {
+    "path": "screens/purchase_success.png",
+    "node": "87:415",
+    "type": "screen",
+    "bytes": 100205
+  },
+  {
+    "path": "raw/purchase_success_1.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 1979412
+  },
+  {
+    "path": "raw/purchase_success_2.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 65045
+  },
+  {
+    "path": "raw/purchase_success_3.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 45357
+  },
+  {
+    "path": "raw/purchase_success_4.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/purchase_success_5.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "raw/purchase_success_6.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/purchase_success_7.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 1046600
+  },
+  {
+    "path": "raw/purchase_success_8.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/purchase_success_9.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 39988
+  },
+  {
+    "path": "raw/purchase_success_10.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 569344
+  },
+  {
+    "path": "raw/purchase_success_11.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/purchase_success_12.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "raw/purchase_success_13.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 177915
+  },
+  {
+    "path": "raw/purchase_success_14.png",
+    "node": "87:415",
+    "type": "raw",
+    "bytes": 465115
+  },
+  {
+    "path": "svg/purchase_success_1.svg",
+    "node": "87:415",
+    "type": "svg",
+    "bytes": 255
+  },
+  {
+    "path": "screens/purchase_failure.png",
+    "node": "87:465",
+    "type": "screen",
+    "bytes": 105312
+  },
+  {
+    "path": "raw/purchase_failure_1.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "raw/purchase_failure_2.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 1046600
+  },
+  {
+    "path": "raw/purchase_failure_3.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 177915
+  },
+  {
+    "path": "raw/purchase_failure_4.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 465115
+  },
+  {
+    "path": "raw/purchase_failure_5.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 65863
+  },
+  {
+    "path": "raw/purchase_failure_6.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 84098
+  },
+  {
+    "path": "raw/purchase_failure_7.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 1961530
+  },
+  {
+    "path": "raw/purchase_failure_8.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 39988
+  },
+  {
+    "path": "raw/purchase_failure_9.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 1979412
+  },
+  {
+    "path": "raw/purchase_failure_10.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 35725
+  },
+  {
+    "path": "raw/purchase_failure_11.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 445338
+  },
+  {
+    "path": "raw/purchase_failure_12.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 23667
+  },
+  {
+    "path": "raw/purchase_failure_13.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 65045
+  },
+  {
+    "path": "raw/purchase_failure_14.png",
+    "node": "87:465",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "svg/purchase_failure_1.svg",
+    "node": "87:465",
+    "type": "svg",
+    "bytes": 255
+  },
+  {
+    "path": "screens/settings.png",
+    "node": "87:514",
+    "type": "screen",
+    "bytes": 268256
+  },
+  {
+    "path": "raw/settings_1.jpg",
+    "node": "87:514",
+    "type": "raw",
+    "bytes": 4226761
+  },
+  {
+    "path": "raw/settings_2.png",
+    "node": "87:514",
+    "type": "raw",
+    "bytes": 1046600
+  },
+  {
+    "path": "raw/settings_3.jpg",
+    "node": "87:514",
+    "type": "raw",
+    "bytes": 197653
+  },
+  {
+    "path": "raw/settings_4.png",
+    "node": "87:514",
+    "type": "raw",
+    "bytes": 14858
+  },
+  {
+    "path": "raw/settings_5.png",
+    "node": "87:514",
+    "type": "raw",
+    "bytes": 6106
+  },
+  {
+    "path": "raw/settings_6.png",
+    "node": "87:514",
+    "type": "raw",
+    "bytes": 39988
+  },
+  {
+    "path": "raw/settings_7.png",
+    "node": "87:514",
+    "type": "raw",
+    "bytes": 5327
+  },
+  {
+    "path": "svg/settings_1.svg",
+    "node": "87:514",
+    "type": "svg",
+    "bytes": 246
+  },
+  {
+    "path": "svg/settings_2.svg",
+    "node": "87:514",
+    "type": "svg",
+    "bytes": 648
+  },
+  {
+    "path": "svg/settings_3.svg",
+    "node": "87:514",
+    "type": "svg",
+    "bytes": 875
+  },
+  {
+    "path": "svg/settings_4.svg",
+    "node": "87:514",
+    "type": "svg",
+    "bytes": 757
+  }
+]

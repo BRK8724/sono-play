@@ -1,0 +1,1112 @@
+[
+  {
+    "hash": "19b317a8210033d55d64f57f6689b18ce1b46d5d",
+    "name": "4_A2 copy",
+    "available": true,
+    "uses": [
+      {
+        "frame": "home",
+        "node": "87:191",
+        "layer": "4_A2 copy 1"
+      },
+      {
+        "frame": "settings",
+        "node": "87:515",
+        "layer": "4_A2 copy 1"
+      },
+      {
+        "frame": "settings_2",
+        "node": "87:778",
+        "layer": "4_A2 copy 1"
+      },
+      {
+        "frame": "store",
+        "node": "87:552",
+        "layer": "4_A2 copy 1"
+      },
+      {
+        "frame": "store_2",
+        "node": "129:457",
+        "layer": "4_A2 copy 1"
+      },
+      {
+        "frame": "stats",
+        "node": "87:595",
+        "layer": "4_A2 copy 1"
+      },
+      {
+        "frame": "gifts",
+        "node": "87:660",
+        "layer": "4_A2 copy 1"
+      }
+    ],
+    "path": "named/4-a2-copy-19b317a8.jpg",
+    "bytes": 4226761,
+    "sha256": "18700bb5b3755737645f9ee4bfcabaf093cc4bbc5b1ff891c337a123144d5a3f"
+  },
+  {
+    "hash": "1eb244c85aff5ebfc6d5a781e9f65e661199ab6c",
+    "name": "gift icon",
+    "available": true,
+    "uses": [
+      {
+        "frame": "home",
+        "node": "87:206",
+        "layer": "gift icon 1"
+      }
+    ],
+    "path": "named/gift-icon-1eb244c8.png",
+    "bytes": 9619,
+    "sha256": "3139fcbe16d9e8e57f1cdaa00ccb12d3cd60bbd94c99fa4c998e06d8eeda095a"
+  },
+  {
+    "hash": "fee0173652455c114c84d9a787c270b28f7b750c",
+    "name": "wifi",
+    "available": true,
+    "uses": [
+      {
+        "frame": "home",
+        "node": "87:210",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "ready",
+        "node": "87:241",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "ready_2",
+        "node": "129:729",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "playing",
+        "node": "87:262",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "game_over_buy",
+        "node": "87:283",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "game_over_retry",
+        "node": "129:671",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "buy_attempts",
+        "node": "87:296",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "buy_attempts_2",
+        "node": "129:617",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:408",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:421",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:503",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "settings",
+        "node": "87:544",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "settings_2",
+        "node": "87:807",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "store",
+        "node": "87:587",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "store_2",
+        "node": "129:486",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "stats",
+        "node": "87:652",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "gifts",
+        "node": "87:717",
+        "layer": "wifi 1"
+      },
+      {
+        "frame": "host_entry",
+        "node": "123:249",
+        "layer": "wifi 1"
+      }
+    ],
+    "path": "named/wifi-fee01736.png",
+    "bytes": 6106,
+    "sha256": "4cabccbf9dc33898715ba1f2512b2e00c8b1ca6b6be01be5c630ce6a830cb8d6"
+  },
+  {
+    "hash": "90d70c11479e237cbe764e145a8feb3116d1c8aa",
+    "name": "half-battery",
+    "available": true,
+    "uses": [
+      {
+        "frame": "home",
+        "node": "87:211",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "ready",
+        "node": "87:242",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "ready_2",
+        "node": "129:730",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "playing",
+        "node": "87:263",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "game_over_buy",
+        "node": "87:284",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "game_over_retry",
+        "node": "129:672",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "buy_attempts",
+        "node": "87:297",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "buy_attempts_2",
+        "node": "129:618",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:409",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:422",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:504",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "settings",
+        "node": "87:545",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "settings_2",
+        "node": "87:808",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "store",
+        "node": "87:588",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "store_2",
+        "node": "129:487",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "stats",
+        "node": "87:653",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "gifts",
+        "node": "87:718",
+        "layer": "half-battery 1"
+      },
+      {
+        "frame": "host_entry",
+        "node": "123:250",
+        "layer": "half-battery 1"
+      }
+    ],
+    "path": "named/half-battery-90d70c11.png",
+    "bytes": 5327,
+    "sha256": "b6d9e283b5c2354c27bfa81dfedd403dc40e77936a2994ec8d371aa970e08d85"
+  },
+  {
+    "hash": "9e93f74d8986ede53116a61f6654e26a2c70abba",
+    "name": "back",
+    "available": true,
+    "uses": [
+      {
+        "frame": "ready",
+        "node": "87:219",
+        "layer": "back 1"
+      },
+      {
+        "frame": "ready_2",
+        "node": "129:709",
+        "layer": "back 1"
+      },
+      {
+        "frame": "playing",
+        "node": "87:249",
+        "layer": "back 1"
+      },
+      {
+        "frame": "game_over_buy",
+        "node": "87:270",
+        "layer": "back 1"
+      },
+      {
+        "frame": "game_over_retry",
+        "node": "129:658",
+        "layer": "back 1"
+      },
+      {
+        "frame": "buy_attempts",
+        "node": "87:291",
+        "layer": "back 1"
+      },
+      {
+        "frame": "buy_attempts_2",
+        "node": "129:612",
+        "layer": "back 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:333",
+        "layer": "back 1"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:416",
+        "layer": "back 1"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:466",
+        "layer": "back 1"
+      }
+    ],
+    "path": "named/back-9e93f74d.png",
+    "bytes": 1961530,
+    "sha256": "3b1a4a2280aa4b0499e579c8a41467263917f1a2d10090915e5760125cfaecdf"
+  },
+  {
+    "hash": "fee12fa6c3cece28a6ff7b0f7ce1dacc484040f4",
+    "name": "hearth icon",
+    "available": true,
+    "uses": [
+      {
+        "frame": "ready",
+        "node": "129:498",
+        "layer": "hearth icon 1"
+      },
+      {
+        "frame": "ready_2",
+        "node": "129:712",
+        "layer": "hearth icon 1"
+      },
+      {
+        "frame": "playing",
+        "node": "87:256",
+        "layer": "hearth icon 1"
+      },
+      {
+        "frame": "game_over_buy",
+        "node": "87:279",
+        "layer": "hearth icon 2"
+      },
+      {
+        "frame": "game_over_retry",
+        "node": "129:678",
+        "layer": "hearth icon 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:351",
+        "layer": "hearth icon 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:352",
+        "layer": "hearth icon 2"
+      },
+      {
+        "frame": "pin",
+        "node": "87:353",
+        "layer": "hearth icon 3"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:444",
+        "layer": "hearth icon 1"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:445",
+        "layer": "hearth icon 2"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:446",
+        "layer": "hearth icon 3"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:484",
+        "layer": "hearth icon 1"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:485",
+        "layer": "hearth icon 2"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:486",
+        "layer": "hearth icon 3"
+      }
+    ],
+    "path": "named/hearth-icon-fee12fa6.png",
+    "bytes": 84098,
+    "sha256": "f3ab9da46344cbc3d4cebcc69095223b0e826df8991e61497531b6fc6a4bc12d"
+  },
+  {
+    "hash": "e5b9358f9b7de891de135e4e9a7b19bd046140d4",
+    "name": "hojigdoh back",
+    "available": true,
+    "uses": [
+      {
+        "frame": "game_over_buy",
+        "node": "87:271",
+        "layer": "hojigdoh back 1"
+      },
+      {
+        "frame": "game_over_retry",
+        "node": "129:659",
+        "layer": "hojigdoh back 1"
+      },
+      {
+        "frame": "buy_attempts",
+        "node": "87:292",
+        "layer": "hojigdoh back 1"
+      },
+      {
+        "frame": "buy_attempts_2",
+        "node": "129:613",
+        "layer": "hojigdoh back 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:334",
+        "layer": "hojigdoh back 1"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:417",
+        "layer": "hojigdoh back 1"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:467",
+        "layer": "hojigdoh back 1"
+      }
+    ],
+    "path": "named/hojigdoh-back-e5b9358f.png",
+    "bytes": 1979412,
+    "sha256": "fa7de6440b01ef5a0df13b435d67f9a8b37921cbe437806d682663a3e3c61aeb"
+  },
+  {
+    "hash": "f322f500ec7a979fbd637956de20062770979908",
+    "name": "SHOP 2",
+    "available": true,
+    "uses": [
+      {
+        "frame": "buy_attempts",
+        "node": "87:317",
+        "layer": "SHOP 2 1"
+      },
+      {
+        "frame": "buy_attempts_2",
+        "node": "129:632",
+        "layer": "SHOP 2 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:349",
+        "layer": "SHOP 2 1"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:442",
+        "layer": "SHOP 2 1"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:482",
+        "layer": "SHOP 2 1"
+      },
+      {
+        "frame": "settings",
+        "node": "87:524",
+        "layer": "SHOP 2 1"
+      },
+      {
+        "frame": "settings_2",
+        "node": "87:787",
+        "layer": "SHOP 2 1"
+      }
+    ],
+    "path": "named/shop-2-f322f500.png",
+    "bytes": 1046600,
+    "sha256": "23bec865cbc941d1a9925e7257200eae571ab2723636af063ecba18fe16f136f"
+  },
+  {
+    "hash": "2a011ea224d4bb9ca2cef9b9c435d490a2e04b53",
+    "name": "coin",
+    "available": true,
+    "uses": [
+      {
+        "frame": "buy_attempts",
+        "node": "87:325",
+        "layer": "coin 1"
+      },
+      {
+        "frame": "buy_attempts_2",
+        "node": "129:638",
+        "layer": "coin 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:357",
+        "layer": "coin 1"
+      },
+      {
+        "frame": "pin",
+        "node": "87:358",
+        "layer": "coin 2"
+      },
+      {
+        "frame": "pin",
+        "node": "87:359",
+        "layer": "coin 3"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:450",
+        "layer": "coin 1"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:451",
+        "layer": "coin 2"
+      },
+      {
+        "frame": "purchase_success",
+        "node": "87:452",
+        "layer": "coin 3"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:490",
+        "layer": "coin 1"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:491",
+        "layer": "coin 2"
+      },
+      {
+        "frame": "purchase_failure",
+        "node": "87:492",
+        "layer": "coin 3"
+      }
+    ],
+    "path": "named/coin-2a011ea2.png",
+    "bytes": 465115,
+    "sha256": "f831bf435c1bbcbd39a1eb692fb99994a284d2c2efb21b23c059648f1fbb026a"
+  },
+  {
+    "hash": "55041f667b985cd26ca68354b98f1a5dc0c6e591",
+    "name": "EMOJI 1",
+    "available": true,
+    "uses": [
+      {
+        "frame": "purchase_success",
+        "node": "87:464",
+        "layer": "EMOJI 1 1"
+      }
+    ],
+    "path": "named/emoji-1-55041f66.png",
+    "bytes": 569344,
+    "sha256": "9237e0345f4a0d24a2a8e6bb6f1ed11dfa0528ed1760b42d64202744e801dff5"
+  },
+  {
+    "hash": "33046200003871934d1154d407aaf1b62197c0b7",
+    "name": "EMOTES 1",
+    "available": true,
+    "uses": [
+      {
+        "frame": "purchase_failure",
+        "node": "87:500",
+        "layer": "EMOTES 1 1"
+      }
+    ],
+    "path": "named/emotes-1-33046200.png",
+    "bytes": 445338,
+    "sha256": "dd29f21140448a8299559ecc873782a0d88f276665cd6e8b2dfd5de70f717400"
+  },
+  {
+    "hash": "96b2b300b2e9a5c36e3746f8003bf03ec047b9de",
+    "name": "phone vibration icon",
+    "available": true,
+    "uses": [
+      {
+        "frame": "settings",
+        "node": "87:540",
+        "layer": "phone vibration icon 1"
+      },
+      {
+        "frame": "settings_2",
+        "node": "87:803",
+        "layer": "phone vibration icon 1"
+      }
+    ],
+    "path": "named/phone-vibration-icon-96b2b300.png",
+    "bytes": 14858,
+    "sha256": "f2550bb2ff0432452749c7bb75869679e3b0807a493e00cde7f854d670ec5dea"
+  },
+  {
+    "hash": "edff662b55380a77a205ccc1e694a4ac60229f9b",
+    "name": "image",
+    "available": true,
+    "uses": [
+      {
+        "frame": "store",
+        "node": "87:568",
+        "layer": "Rectangle 18993"
+      },
+      {
+        "frame": "store_2",
+        "node": "129:468",
+        "layer": "Rectangle 18993"
+      }
+    ],
+    "path": "named/image-edff662b.png",
+    "bytes": 296197,
+    "sha256": "aca3fd3f35713efe4c30d08ae3a13c885b17fe430875022cf88ad8cdd62d41bd"
+  },
+  {
+    "hash": "17ec9cf47b6f859cef9de16a58c5c4a292f74919",
+    "name": "santa sono",
+    "available": true,
+    "uses": [
+      {
+        "frame": "store",
+        "node": "129:493",
+        "layer": "santa sono 1"
+      }
+    ],
+    "path": "named/santa-sono-17ec9cf4.png",
+    "bytes": 305116,
+    "sha256": "8cbfbad2e016b1cf031edff9c6b9a504fcd32c82ce231fa43b179f4a204e010c"
+  },
+  {
+    "hash": "871113b4be5582ecbc185bb0f6255edd0e04d7df",
+    "name": "gold sono",
+    "available": true,
+    "uses": [
+      {
+        "frame": "store_2",
+        "node": "129:472",
+        "layer": "gold sono 1"
+      },
+      {
+        "frame": "stats",
+        "node": "87:649",
+        "layer": "gold sono 1"
+      }
+    ],
+    "path": "named/gold-sono-871113b4.png",
+    "bytes": 441172,
+    "sha256": "5ee24e366735f7b3b906a538c368d4c7ab7406425ca3a39206ed55227c1f47a5"
+  },
+  {
+    "hash": "ff2ec072e4d74915fc2ad11a01d4443b5fbd3ab4",
+    "name": "image",
+    "available": true,
+    "uses": [
+      {
+        "frame": "store_2",
+        "node": "129:736",
+        "layer": "Rectangle 18992"
+      }
+    ],
+    "path": "named/image-ff2ec072.png",
+    "bytes": 186312,
+    "sha256": "2aacabe4acb65f06d05a676f89a174b29fbc453fb73dbca1286354fdc4337b9d"
+  },
+  {
+    "hash": "a7ce66552a477062fce2a6412761e5ff2b5ed97e",
+    "name": "1st-prize_11337471",
+    "available": true,
+    "uses": [
+      {
+        "frame": "stats",
+        "node": "87:643",
+        "layer": "1st-prize_11337471 3"
+      }
+    ],
+    "path": "named/1st-prize-11337471-a7ce6655.png",
+    "bytes": 35402,
+    "sha256": "62afd4e8eabaf1332314275ddd25288850a96969b81d1c6baee341feff903666"
+  },
+  {
+    "hash": "7c18301fcbeef6121cb0aaa9af64b2309d60ac38",
+    "name": "emart",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "127:374",
+        "layer": "emart 1"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:405",
+        "layer": "emart 2"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:418",
+        "layer": "emart 3"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:431",
+        "layer": "emart 4"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:444",
+        "layer": "emart 5"
+      }
+    ],
+    "path": "named/emart-7c18301f.png",
+    "bytes": 214522,
+    "sha256": "ba8193dbca759c191e089f80f57a94724d86ba30307e510134fe4a9342359078"
+  },
+  {
+    "hash": "2f376ac884fb9e91aee3eceaf00bd918bf04c216",
+    "name": "1 Байр",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "128:392",
+        "layer": "1 Байр 1"
+      }
+    ],
+    "path": "named/1-2f376ac8.png",
+    "bytes": 85484,
+    "sha256": "a77510f0a95c1cec738bd7286be7730a0c11ddd1fa8852174de1dc314e46d488"
+  },
+  {
+    "hash": "60bdaeb682dfda38bc25e6df1ebfd76119542d60",
+    "name": "primeat",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "128:396",
+        "layer": "primeat 1"
+      },
+      {
+        "frame": "gifts",
+        "node": "128:397",
+        "layer": "primeat 2"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:399",
+        "layer": "primeat 3"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:400",
+        "layer": "primeat 4"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:409",
+        "layer": "primeat 5"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:410",
+        "layer": "primeat 6"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:412",
+        "layer": "primeat 8"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:422",
+        "layer": "primeat 9"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:435",
+        "layer": "primeat 13"
+      }
+    ],
+    "path": "named/primeat-60bdaeb6.png",
+    "bytes": 182277,
+    "sha256": "91bc40160abcbe283a1ef0fe1fc3785714d06b018b3372697b8812e45e90daa9"
+  },
+  {
+    "hash": "587d32f90f34495abe2c6c0394469e544c59aa40",
+    "name": "next",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "129:398",
+        "layer": "next 1"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:413",
+        "layer": "next 2"
+      }
+    ],
+    "path": "named/next-587d32f9.png",
+    "bytes": 220995,
+    "sha256": "e8e0679dea62304116e41e659fe95fd83a2a01a41d0a56b2a09983b1253a1b32"
+  },
+  {
+    "hash": "fc5e46e6ebb69d7cfea39b8ee19ca1f4c9529e81",
+    "name": "sono egg",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "129:401",
+        "layer": "sono egg 1"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:414",
+        "layer": "sono egg 2"
+      },
+      {
+        "frame": "gifts",
+        "node": "129:427",
+        "layer": "sono egg 3"
+      }
+    ],
+    "path": "named/sono-egg-fc5e46e6.png",
+    "bytes": 229614,
+    "sha256": "3ccd69dea96c2aebe43e6a26013dbc2b71750d7f6ccbab40f18876712b1af5f8"
+  },
+  {
+    "hash": "4ee7189528d93a20317be42ca7df5e4cababc914",
+    "name": "narut med",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "129:402",
+        "layer": "narut med 1"
+      }
+    ],
+    "path": "named/narut-med-4ee71895.png",
+    "bytes": 242344,
+    "sha256": "0f1e6e632405def6bca8930257bcc4233f85cbe2182466a20678462d8a965471"
+  },
+  {
+    "hash": "bac79ef29d38e6f0ec2a6234b74cb2042162806c",
+    "name": "2 Байр",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "129:449",
+        "layer": "2 Байр 1"
+      }
+    ],
+    "path": "named/2-bac79ef2.png",
+    "bytes": 80738,
+    "sha256": "7daccdedffcde3c1c70d0f018168137a62aab0162434b05388a80bac3a226799"
+  },
+  {
+    "hash": "e056ccfc3aa64c7a4a681026eb8ce3681a4a9055",
+    "name": "3 байр",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "129:450",
+        "layer": "3 байр 1"
+      }
+    ],
+    "path": "named/3-e056ccfc.png",
+    "bytes": 62050,
+    "sha256": "5112903fe5f95ae30a29089ed419a1e2930f3a10d923f2d3e5a3566e72bc68cf"
+  },
+  {
+    "hash": "4de3e1d63ad9a3af26b41e590c4e486b5387073d",
+    "name": "4 байр",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "129:451",
+        "layer": "4 байр 1"
+      }
+    ],
+    "path": "named/4-4de3e1d6.png",
+    "bytes": 32336,
+    "sha256": "f1167de4a717656e41e50effbad7e6db015a7c6196e4f68e293cbedc72f3e74a"
+  },
+  {
+    "hash": "23119fa4715634ea5c8b792281ff4e6d8b532b8d",
+    "name": "5 байр",
+    "available": true,
+    "uses": [
+      {
+        "frame": "gifts",
+        "node": "129:452",
+        "layer": "5 байр 1"
+      }
+    ],
+    "path": "named/5-23119fa4.png",
+    "bytes": 26913,
+    "sha256": "3dee94ec19e240eeb5b99069da54f3b4c385c8e3102c8d753f4feaa7893d1388"
+  },
+  {
+    "hash": "898b5aa2c1182a701806641e70847132e7cd6c70",
+    "name": "shopping-bag-1",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:239",
+        "layer": "shopping-bag-black 1"
+      }
+    ],
+    "path": "named/shopping-bag-1-898b5aa2.png",
+    "bytes": 15411,
+    "sha256": "95f3f493ba14f94691dbfc29847c804ca18436a071552399d44596682cb0a20c"
+  },
+  {
+    "hash": "7682b64ce1ac853754b1a087018ffd22be0aa287",
+    "name": "image",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:256",
+        "layer": "Rectangle 18944"
+      }
+    ],
+    "path": "named/image-7682b64c.png",
+    "bytes": 115237,
+    "sha256": "1070f1d3a0986a18903500d5193394bbbb205be8a5eb5bc3baaa507b80aabcd8"
+  },
+  {
+    "hash": "b5a079be6ac21798e116c2294b3be7ae404e2dfa",
+    "name": "sono play",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:260",
+        "layer": "Rectangle 18947"
+      }
+    ],
+    "path": "named/sono-play-b5a079be.png",
+    "bytes": 874929,
+    "sha256": "cd307a282ca4458d6bffcf89de854316840892a82d508e427514562380c68a58"
+  },
+  {
+    "hash": "3f3fe4ed22fb7148fb77dc73dea9c424ca2a0bb0",
+    "name": "shop-deactive",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:273",
+        "layer": "shop-deactive"
+      },
+      {
+        "frame": "host_entry",
+        "node": "123:287",
+        "layer": "shop-deactive"
+      }
+    ],
+    "path": "named/shop-deactive-3f3fe4ed.png",
+    "bytes": 17397,
+    "sha256": "50f8254be829de9cee1352fde1d015013d5816acc7af61fb959c6a9bdd1f5381"
+  },
+  {
+    "hash": "132a1c3efef3fadc3b37518b455bc57dd0e6ebbc",
+    "name": "home-deactive",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:276",
+        "layer": "ac-home"
+      },
+      {
+        "frame": "host_entry",
+        "node": "123:291",
+        "layer": "ac-home"
+      }
+    ],
+    "path": "named/home-deactive-132a1c3e.png",
+    "bytes": 22648,
+    "sha256": "9b097e881ff1f6c55c687986e7b5c86e7db3b510351f7ebfa3d1e41b4c358796"
+  },
+  {
+    "hash": "994bc05ab71158ed351c2ffa094121c68d368e4a",
+    "name": "bonus-deactive",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:279",
+        "layer": "bonus-deactive"
+      },
+      {
+        "frame": "host_entry",
+        "node": "123:285",
+        "layer": "bonus-deactive"
+      }
+    ],
+    "path": "named/bonus-deactive-994bc05a.png",
+    "bytes": 15789,
+    "sha256": "a04ceca102052580b4155b830d1ef5dc29271d1d02605022b4a7437b2f3c6a1d"
+  },
+  {
+    "hash": "94942849746c17c7aa3bd9e5f71a78e41ac0eaa3",
+    "name": "3",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:294",
+        "layer": "3 333333334"
+      }
+    ],
+    "path": "named/3-94942849.png",
+    "bytes": 68542,
+    "sha256": "36c8c8fb1590c9decf85b50251f45ff5845af2d2e59d75f60b4f789bbe0eddef"
+  },
+  {
+    "hash": "07f13bced9a4671840a0ba5e9fb01633574ba902",
+    "name": "5",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:296",
+        "layer": "5 61"
+      }
+    ],
+    "path": "named/5-07f13bce.png",
+    "bytes": 99881,
+    "sha256": "331f80219a20c06060ee559c044adc4dc1299334b5e56352c5644bfe6c930ca4"
+  },
+  {
+    "hash": "bd77bc40214b73bb6ca2280d7af49d3236393cc9",
+    "name": "6",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:297",
+        "layer": "6 1"
+      }
+    ],
+    "path": "named/6-bd77bc40.png",
+    "bytes": 720287,
+    "sha256": "e53cdc68b4dcb306619988b2cbda5b77a6a3686d79f16ed493bd145a6b786479"
+  },
+  {
+    "hash": "426c778fa3b8d1717c0b75326a645b25fc607c2b",
+    "name": "_",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:301",
+        "layer": "_ 1"
+      }
+    ],
+    "path": "named/image-426c778f.png",
+    "bytes": 12702436,
+    "sha256": "83e04af8a38a2daed24bac392d36f3a98fb6cd4a103bf59114a135f31e341bd9"
+  },
+  {
+    "hash": "66f90834ca6e42b8dc9f32293495f751d829e114",
+    "name": "globe-with-word-ice-it",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:302",
+        "layer": "globe-with-word-ice-it 1"
+      }
+    ],
+    "path": "named/globe-with-word-ice-it-66f90834.jpg",
+    "bytes": 1852229,
+    "sha256": "37b49c9f40dcd5d71e7048bcbf19736032042d3ffdc89289f8d04fa34d65f2a9"
+  },
+  {
+    "hash": "9378ace02b303d2bc70716f1eb6d0fa98a02f1b3",
+    "name": "8",
+    "available": true,
+    "uses": [
+      {
+        "frame": "host_entry",
+        "node": "123:309",
+        "layer": "8 98"
+      }
+    ],
+    "path": "named/8-9378ace0.png",
+    "bytes": 139050,
+    "sha256": "ffdf4920237a208391e2d2cb9381a1cec478a418c515a70eee43fc47d942289a"
+  }
+]

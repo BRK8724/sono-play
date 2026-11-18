@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="mn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#40368f" />
+    <link rel="icon" href="data:," />
+    <title>Flappy SONO</title>
+  </head>
+  <body data-phase="HOME">
+    <div id="viewport">
+      <main id="shell">
+        <div id="sky"></div>
+        <div id="game"></div>
+        <div id="loading" role="status">SONO ачаалж байна…</div>
+        <div id="offline-notice" role="alert" hidden>
+          Холболт тасарлаа. Сүлжээгээ шалгаад дахин оролдоно уу.
+        </div>
+        <button id="demo-open" class="demo-badge">ТУРШИЛТ</button>
+        <button id="scene-back" class="back-button" aria-label="Нүүр рүү буцах" hidden>‹</button>
+        <section id="home" class="screen" aria-label="Үндсэн цэс" hidden>
+          <button
+            id="music-toggle"
+            class="icon-button music-toggle"
+            aria-label="Хөгжим"
+            aria-pressed="true"
+          >
+            <img src="/assets/fine-gold/music.svg" alt="" />
+          </button>
+          <h1 class="home-logo" aria-label="FLAPPY SONO">
+            <img src="/assets/fine-gold/logo-flappy.webp" alt="" /><img
+              src="/assets/fine-gold/logo-sono.webp"
+              alt=""
+            />
+          </h1>
+          <div class="menu-actions">
+            <button id="play" class="game-button green">ТОГЛОХ</button>
+            <button id="rules-open" class="game-button purple">ДҮРЭМ</button>
+            <button id="stats-open" class="game-button purple">ЯЛАГЧИД</button>
+          </div>
+          <div class="menu-footer">
+            <button id="gifts-open" class="icon-button" aria-label="Шагналууд">
+              <img src="/assets/final/gift-icon-1eb244c8.png" alt="" />
+            </button>
+            <button id="store-open" class="icon-button" aria-label="Загвар">
+              <img src="/assets/fine-gold/skin.webp" alt="" />
+            </button>
+            <button id="lives-open" class="icon-button" aria-label="Амийн жагсаалт">
+              <img src="/assets/fine-gold/life-history.svg" class="document-icon" alt="" /><img
+                src="/assets/final/hearth-icon-fee12fa6.png"
+                class="document-heart"
+                alt=""
+              />
+            </button>
+            <button id="settings-open" hidden>Тохиргоо</button>
+          </div>
+        </section>
+        <div class="sponsor">
+          <span>SPONSORED BY</span><img src="/assets/fine-gold/sponsor.webp" alt="Fine Gold" />
+        </div>
+        <div id="hud" hidden>
+          <div><small>ОНОО</small><strong id="score">0</strong></div>
+          <div class="right">
+            <small id="best-label">TOTAL</small><strong id="best">120</strong>
+          </div>
+        </div>
+        <div id="theme-label" hidden></div>
+        <section id="ready" class="screen" aria-label="Тоглоход бэлэн" hidden>
+          <div class="ready-action">
+            <span>ЭНД</span
+            ><button id="ready-start" class="start-button" aria-label="Нислэг эхлүүлэх">▶</button
+            ><span>ДАР</span>
+          </div>
+        </section>
+        <div id="attempt-bar" hidden>
+          <img src="/assets/final/hearth-icon-fee12fa6.png" alt="Тоглох эрх" /><strong
+            id="attempt-count"
+            >3</strong
+          >
+        </div>
+        <section id="game-over" class="screen" aria-label="Тоглолтын дүн" hidden>
+          <div class="over-content">
+            <h1>ЭЭ УНАЧИХЛАА</h1>
+            <div class="over-score">ОНОО<strong id="result-score">0</strong></div>
+            <div class="result-heart">
+              <img src="/assets/final/hearth-icon-fee12fa6.png" alt="Үлдсэн эрх" /><strong
+                id="result-attempts"
+                >2</strong
+              >
+            </div>
+            <button id="retry" class="game-button green">ДАХИН ТОГЛОХ</button>
+            <p id="result-reason"></p>
+            <p id="result-status" role="status"></p>
+            <button id="result-sync" class="small-button" hidden>ДҮНГ ДАХИН ИЛГЭЭХ</button>
+            <button id="home-button" class="text-button">НҮҮР РҮҮ</button>
+          </div>
+        </section>
+        <section
+          id="host-preview"
+          class="host-preview"
+          aria-label="SONO app жишээ"
+          hidden
+        ></section>
+        <section
+          id="info-overlay"
+          class="info-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="info-title"
+          hidden
+        >
+          <div class="info-card">
+            <h2 id="info-title"></h2>
+            <button id="info-close" class="info-close" aria-label="Хаах">×</button>
+            <div id="panel-content"></div>
+          </div>
+        </section>
+        <div id="toast" role="status" hidden></div>
+        <nav id="preview-tools" class="preview-tools" aria-label="Дэлгэцийн preview" hidden></nav>
+      </main>
+    </div>
+    <script type="module" src="/src/entry.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,245 @@
+[
+  {
+    "file": "sponsor.webp",
+    "hash": "407777d674aac5b09d74c89ba1dc0daf8ed3cd2e",
+    "nodes": [
+      "168:10886",
+      "168:10890",
+      "168:10894",
+      "168:10906",
+      "168:10910",
+      "168:10914",
+      "168:10918",
+      "168:10579",
+      "168:10663",
+      "168:10779",
+      "168:10869",
+      "170:11403",
+      "175:11514",
+      "175:13281"
+    ],
+    "source": "named/fine-gold-407777d6.png",
+    "width": 216,
+    "height": 153,
+    "bytes": 5012
+  },
+  {
+    "file": "skin.webp",
+    "hash": "407d025c89271936ccce9a1d5efa47dbafb64846",
+    "nodes": [
+      "175:12636",
+      "175:12737"
+    ],
+    "source": "named/SKIN-407d025c.png",
+    "width": 96,
+    "height": 98,
+    "bytes": 3026
+  },
+  {
+    "file": "pilot.webp",
+    "hash": "37070977d24452e51c131ef0f72be467c01b902f",
+    "nodes": [
+      "168:9547",
+      "168:9594",
+      "175:13100",
+      "168:9826",
+      "168:9853",
+      "175:12475",
+      "168:10343",
+      "168:10408",
+      "168:10476",
+      "175:12104",
+      "175:13311"
+    ],
+    "source": "named/flappy-sono-bird-copy-37070977.png",
+    "width": 180,
+    "height": 184,
+    "bytes": 6432
+  },
+  {
+    "file": "attention.webp",
+    "hash": "b5ee85ca652300a5bc9df4a556fe1df72631eadd",
+    "nodes": [
+      "168:10580"
+    ],
+    "source": "named/attention-b5ee85ca.png",
+    "width": 92,
+    "height": 78,
+    "bytes": 3450
+  },
+  {
+    "file": "rank-1.webp",
+    "hash": "2df4974726b251b898b80ec180540b5702174570",
+    "nodes": [
+      "170:11447",
+      "168:10800",
+      "168:10866",
+      "170:11429",
+      "187:14043",
+      "191:14278",
+      "191:14282",
+      "191:14283"
+    ],
+    "source": "named/rank-1-2df49747.png",
+    "width": 288,
+    "height": 309,
+    "bytes": 39998
+  },
+  {
+    "file": "rank-2.webp",
+    "hash": "bec8416ed3e0535d53052da0da3ea5a52b70341f",
+    "nodes": [
+      "168:10784",
+      "170:11430"
+    ],
+    "source": "named/rank-2-bec8416e.png",
+    "width": 288,
+    "height": 309,
+    "bytes": 35628
+  },
+  {
+    "file": "rank-3.webp",
+    "hash": "88197635db3eb6ec048f905ceac8d579dfd5c708",
+    "nodes": [
+      "168:10785",
+      "170:11415"
+    ],
+    "source": "named/rank-3-88197635.png",
+    "width": 288,
+    "height": 309,
+    "bytes": 37156
+  },
+  {
+    "file": "rank-4.webp",
+    "hash": "2168d2f5d28bcf8403b4deae44a1e8c22f49bc14",
+    "nodes": [
+      "168:10783",
+      "170:11431"
+    ],
+    "source": "named/rank-4-2168d2f5.png",
+    "width": 288,
+    "height": 309,
+    "bytes": 34518
+  },
+  {
+    "file": "rank-5.webp",
+    "hash": "ae7773853fa568df2a4462fffeb0b0ceda49c671",
+    "nodes": [
+      "168:10782",
+      "170:11432"
+    ],
+    "source": "named/rank-5-ae777385.png",
+    "width": 288,
+    "height": 309,
+    "bytes": 34686
+  },
+  {
+    "file": "gold-1.webp",
+    "hash": "523108c0bf2f2e3ea4f076e0cbe5d0ca2eb59e22",
+    "nodes": [
+      "191:14049"
+    ],
+    "source": "named/1-523108c0.png",
+    "width": 180,
+    "height": 129,
+    "bytes": 13712
+  },
+  {
+    "file": "gold-2.webp",
+    "hash": "f286ef8179e34271dcad2fd74ec3e79a07ee2174",
+    "nodes": [
+      "191:14048"
+    ],
+    "source": "named/2-f286ef81.png",
+    "width": 180,
+    "height": 129,
+    "bytes": 10368
+  },
+  {
+    "file": "gold-3.webp",
+    "hash": "eefd5df799a255abfccef9a822bbccae8d6b1be1",
+    "nodes": [
+      "191:14047"
+    ],
+    "source": "named/3-eefd5df7.png",
+    "width": 180,
+    "height": 129,
+    "bytes": 8916
+  },
+  {
+    "file": "gold-4.webp",
+    "hash": "edffd3099bd73e19c05559f55456bf8d3125fc3c",
+    "nodes": [
+      "191:14046"
+    ],
+    "source": "named/4-edffd309.png",
+    "width": 180,
+    "height": 129,
+    "bytes": 5758
+  },
+  {
+    "file": "gold-5.webp",
+    "hash": "968d679220f057281e49b516a35c31130021bdbf",
+    "nodes": [
+      "191:14050",
+      "191:14045"
+    ],
+    "source": "named/5-968d6792.png",
+    "width": 180,
+    "height": 129,
+    "bytes": 3774
+  },
+  {
+    "file": "logo-flappy.webp",
+    "node": "193:14285",
+    "source": "named/flappy-sono-1c83cbab.png",
+    "crop": {
+      "left": 0,
+      "top": 1,
+      "width": 1750,
+      "height": 443
+    },
+    "width": 936,
+    "height": 237,
+    "bytes": 3196
+  },
+  {
+    "file": "logo-sono.webp",
+    "node": "193:14284",
+    "source": "named/flappy-sono-1c83cbab.png",
+    "crop": {
+      "left": 606,
+      "top": 444,
+      "width": 1144,
+      "height": 393
+    },
+    "width": 612,
+    "height": 210,
+    "bytes": 2130
+  },
+  {
+    "file": "life-history.svg",
+    "node": "168:9707",
+    "source": "source.fig outlined vector geometry",
+    "width": 34,
+    "height": 34,
+    "bytes": 3214
+  },
+  {
+    "file": "music.svg",
+    "node": "175:12551",
+    "source": "source.fig outlined vector geometry",
+    "width": 32,
+    "height": 32,
+    "bytes": 1011
+  },
+  {
+    "file": "winner-logo.webp",
+    "node": "191:14281",
+    "hash": "36a7994ab19185a169768e44085fb0af7a9375c8",
+    "source": "named/sono-play-36a7994a.png",
+    "width": 240,
+    "height": 184,
+    "bytes": 21828
+  }
+]

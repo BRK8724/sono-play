@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#27365a" />
+    <title>Sono Play</title>
+    <script type="module" crossorigin src="/assets/index-C8BXV6z9.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/phaser-DFK5Ua9d.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-DK_DDeIH.css">
+  </head>
+  <body>
+    <main id="stage-wrap">
+      <div id="game-shell">
+        <div id="loading" class="dialog-backdrop">Loading Sono Play…</div>
+        <div id="sky"></div>
+        <div id="game-root"></div>
+
+        <button id="pause-button" class="pause-control" aria-label="Pause">Ⅱ</button>
+        <div id="hud" class="hidden">
+          <div class="hud-block"><span>SCORE</span><strong id="score">0</strong></div>
+          <div class="hud-block right"><span>BEST</span><strong id="best">0</strong></div>
+        </div>
+        <button type="button" id="play-bank" class="game-bank hidden" aria-label="Bonus coins"><span class="heart-icon">◆</span><span id="ready-coins">0</span><span class="plus-icon" aria-hidden="true">+</span></button>
+
+        <section id="menu" class="screen menu-screen">
+          <img class="logo" src="/assets/sono/menu-logo.png" alt="Sono Play" />
+          <button id="lives-button" class="lives-pill">♥ <span id="lives-count">5</span> <span>+</span></button>
+          <div class="menu-actions">
+            <button id="play-button" class="game-button green large">PLAY</button>
+            <button id="store-button" class="game-button purple">STORE</button>
+            <button id="stats-button" class="game-button purple">STATS</button>
+          </div>
+          <div class="menu-footer">
+            <button id="gifts-button" class="icon-button" aria-label="Gifts and leaderboard">♔</button><button id="sound-button" class="icon-button" aria-label="Toggle sound">♪</button>
+            <div class="coin-pill" aria-label="Bonus coins"><span class="coin-icon">✦</span><span id="menu-coins">0</span><small>Demo</small></div>
+            <button id="settings-button" class="icon-button" aria-label="Settings">⚙</button><button id="help-button" class="icon-button" aria-label="How to play">?</button>
+          </div>
+        </section>
+
+        <section id="ready" class="screen ready-screen hidden">
+          <div class="ready-content">
+            <span>TAP</span>
+            <button id="start-button" class="play-icon-button" aria-label="Start game">▶</button>
+            <span>PLAY</span>
+          </div>
+        </section>
+
+        <section id="game-over" class="screen over-screen hidden">
+          <h1>GAME OVER</h1>
+          <div class="over-score">SCORE<strong id="final-score">0</strong></div>
+          <div class="over-rank"><span id="rank-value">0</span></div>
+          <div class="earned">+<span id="earned-coins">0</span> bonus coins</div>
+          <div class="over-actions">
+            <button id="retry-button" class="game-button green large">PLAY AGAIN</button>
+            <button id="over-store-button" class="game-button purple">STORE</button>
+            <button id="home-button" class="text-button">HOME</button>
+          </div>
+        </section>
+
+        <section id="store" class="screen panel-screen hidden">
+          <div class="store-panel">
+            <h1 class="store-tab">STORE</h1>
+            <button id="store-back" class="store-close" aria-label="Close store">×</button>
+            <div class="store-balance"><span class="coin-icon">✦</span><span id="store-coins">0</span> bonus coins</div>
+            <h2>SONO</h2>
+            <div id="skins" class="store-grid"></div>
+            <h2>BACKGROUND</h2>
+            <div id="backgrounds" class="store-grid"></div><button id="reset-look" class="default-look">USE ORIGINAL LOOK</button>
+          </div>
+        </section>
+
+        <section id="stats" class="screen panel-screen hidden">
+          <button id="stats-back" class="back-button" aria-label="Back">‹</button>
+          <h1>STATS</h1>
+          <p class="panel-subtitle">Your flight record</p>
+          <div class="stats-grid">
+            <div><span>BEST SCORE</span><strong id="stats-best">0</strong></div>
+            <div><span>GAMES PLAYED</span><strong id="stats-games">0</strong></div>
+            <div><span>PIPES PASSED</span><strong id="stats-pipes">0</strong></div>
+            <div><span>BONUS COINS</span><strong id="stats-coins">0</strong></div>
+          </div>
+          <button id="stats-play" class="game-button green large stats-play">PLAY</button>
+        </section>
+
+        <section id="help" class="screen panel-screen hidden">
+          <button id="help-back" class="back-button" aria-label="Back">‹</button>
+          <h1>HOW TO PLAY</h1>
+          <div class="help-card">
+            <div class="help-bird">🐦</div>
+            <p><strong>TAP</strong> or press <strong>SPACE</strong> to flap.</p>
+            <p>Fly through the gaps. Each pipe earns 1 point and 10 bonus coins (up to 60 per run).</p>
+            <p>Bonus coins stay in this game and are separate from your account's SP.</p>
+            <p>Touching a pipe or the ground ends the run.</p>
+          </div>
+          <button id="help-play" class="game-button green large stats-play">LET'S PLAY</button>
+        </section>
+        <div id="error-dialog" class="dialog-backdrop hidden" role="alertdialog"><div class="dialog-card"><h2>ӨӨӨ...</h2><img src="/assets/sono/sorry-bird.png" alt="Sono is sorry" loading="lazy"/><p id="error-message"></p><button id="error-close" class="game-button purple">OK</button></div></div>
+        <div id="life-dialog" class="dialog-backdrop hidden" role="dialog" aria-modal="true" aria-label="Extra lives">
+          <div class="dialog-card"><button id="life-close" class="store-close" aria-label="Close">×</button>
+            <img src="/assets/sono/profile-bird.png" alt="Sono" /><h2>АМЬ АВАХ</h2><div id="life-options"></div><p>Your coins: <strong id="life-balance">0</strong></p>
+            <button id="buy-lives" class="game-button green">BUY</button><small>Demo coins · separate from core SP</small>
+          </div>
+        </div>
+        <div id="success-dialog" class="dialog-backdrop hidden"><div class="dialog-card"><h2>COOL...</h2><p id="success-message"></p><img src="/assets/sono/success-bird.png" alt="Sono celebrates" loading="lazy"/><button id="success-close" class="game-button purple">OK</button></div></div>
+        <div id="settings-dialog" class="dialog-backdrop hidden"><div class="dialog-card"><button id="settings-close" class="store-close" aria-label="Close">×</button><h2>SETTINGS</h2><img src="/assets/sono/profile-bird.png" alt="Profile" loading="lazy"/><p>НЭР: DEMO PILOT</p><small>Test profile · no personal data</small><button id="settings-sound" class="game-button purple">♪ SOUND</button><button id="settings-haptics" class="game-button purple">HAPTICS</button></div></div>
+        <div id="gifts-dialog" class="dialog-backdrop hidden"><div class="dialog-card leaderboard"><button id="gifts-close" class="store-close" aria-label="Close">×</button><h2>GIFTS</h2><img src="/assets/sono/gold.png" alt="Gold Sono" loading="lazy"/><small>Demo leaderboard</small><div id="leader-list"></div><p>YOUR BEST: <strong id="your-best">0</strong></p></div></div>
+        <div id="pin-dialog" class="dialog-backdrop hidden"><div class="pin-sheet"><h2>Demo Sono PIN</h2><p>Test code: 0000 · do not enter a real PIN</p><div id="pin-dots">○○○○</div><div id="pin-keys"></div></div></div>
+        <div id="pause-dialog" class="dialog-backdrop hidden" role="dialog" aria-modal="true" aria-label="Paused"><div class="dialog-card"><h2>PAUSED</h2><p>Your flight is waiting.</p><button id="resume-button" class="game-button green">RESUME</button></div></div>
+      </div>
+    </main>
+  </body>
+</html>
