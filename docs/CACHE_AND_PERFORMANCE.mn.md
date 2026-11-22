@@ -27,8 +27,8 @@
 
 ```bash
 npm ci
-npm run check
-VITE_SERVICE_MODE=api VITE_API_BASE_URL=https://play-api.example.com npm run build -- --base=/sono-play/
+npm run format:check
+VITE_API_BASE_URL=https://play-api.example.com npm run build -- --base=/sono-play/
 ```
 
 Зорилтот Linux VPS дээр шинэ release-ийн `dist/`-ийг `releases/<шинэ-id>/sono-play/` руу бүтнээр хуулна. `dist/assets/`-ийн hash файлуудыг `shared/sono-play/assets/` руу нэмэлтээр хуулж дуусгаад `current` symlink-ийг атомик rename-аар шинэ release рүү шилжүүлнэ. Shared хавтсанд хуучин hash-уудыг үлдээж, нээлттэй WebView болон rollback-ийн дэмжих хугацаатай нийцүүлэн цэвэрлэнэ. Assets-ийг байршуулсны дараа шинэ HTML-ийг идэвхжүүлэх нь хуучин/шинэ bundle холилдож 404 үүсэхээс сэргийлнэ.
@@ -44,7 +44,7 @@ nginx -t
 curl -I https://miniapps.example.com/sono-play/
 curl -I https://miniapps.example.com/sono-play/release-manifest.json
 # Доорхыг build manifest дахь бодит hash URL-аар орлуулна.
-curl -I https://miniapps.example.com/sono-play/assets/static/fonts/mogul-square-HASH.ttf
+curl -I https://miniapps.example.com/sono-play/assets/static/fonts/mogul-square-HASH.woff2
 curl -i -X OPTIONS https://play-api.example.com/api/v1/me -H 'Origin: https://miniapps.example.com' -H 'Access-Control-Request-Method: GET' -H 'Access-Control-Request-Headers: Authorization'
 curl -i https://play-api.example.com/api/v1/me
 ```
@@ -60,7 +60,7 @@ HTML/manifest дээр revalidation, hash asset дээр immutable, 401 зэрэ
 | `lb:{5:total}:me:402` | Зөвхөн authenticated player 402-ийн rank/score |
 | `lb:{5:day:2026-11-18}:scores` | Өдрийн standings endpoint нэмэгдэх үеийн УБ өдрийн namespace |
 
-Одоогийн Player API зөвхөн тэмцээний нийт leaderboard өгдөг. Өнөөдөр/өмнөх өдрийн standings, хувийн болон амийн түүх, SP balance-ийн endpoint-ууд backend интеграц хүлээж байна. Key-д tournament ба period оруулж, шинэ тэмцээний оноо өмнөх тэмцээний cache-тай холилдохоос хамгаална.
+2026-11-19: Player API-д нийт чансаанаас гадна `GET /api/v1/leaderboard/daily`, `GET /api/v1/leaderboard/days`, `GET /api/v1/lives/history` нэмэгдэж frontend-д холбогдсон. Хувийн онооны түүх болон SP balance-ийн тусдаа endpoint одоогоор collection-д алга. Key-д tournament ба period оруулж, шинэ тэмцээний оноо өмнөх тэмцээний cache-тай холилдохоос хамгаална.
 
 Server FINISHED дүнг өгөгдлийн санд нэг удаа commit хийсний дараа aggregate total + revision бүхий outbox event гаргана. Redis worker нь баталгаажсан aggregate-ийг `ZADD`-аар шинэчилж, хуучин/давхардсан revision-ийг transaction/Lua-гаар алгасана. Client-ийн дурын оноог cache-д шууд нэмж эрх/шагнал тооцох суваг үүсгэхгүй. Top 10-д `ZRANGE … REV WITHSCORES`, өөрийн байранд `ZREVRANK + 1` хэрэглэж болно. Тэнцсэн онооны эрэмбэлэх дүрмийг backend-ийн баталсан дүрэмтэй нийцүүлнэ. [Redis sorted sets](https://redis.io/docs/latest/develop/data-types/sorted-sets/), [Redis ZREVRANK](https://redis.io/docs/latest/commands/zrevrank/).
 
@@ -70,7 +70,7 @@ Server FINISHED дүнг өгөгдлийн санд нэг удаа commit хи
 
 **Клиент ба VPS дээр хэмжих зүйл**
 
-Dev URL-ийн `?mode=mock&perf=1` нь FPS, p95 frame interval, Phaser canvas-ийн rendered-frame тоог локал overlay-д харуулна. Console дахь `window.__SONO_PERFORMANCE__.snapshot()` / `reset()`-ийг ашиглаж болно. Timing sample 1,800-аар хязгаарлагдаж browser memory-д байрлана. HTTP telemetry болон хэрэглэгчийн өгөгдөл хадгалах урсгал үүсгэхгүй. `jsHeapMiB` нь browser дэмжсэн үеийн JS heap бөгөөд GPU memory хэмжилт тусдаа хэрэгтэй. Production build-д энэ dev diagnostic хасагдана.
+Development URL-ийн `?perf=1` нь FPS, p95 frame interval, Phaser canvas-ийн rendered-frame тоог локал overlay-д харуулна. Console дахь `window.__SONO_PERFORMANCE__.snapshot()` / `reset()`-ийг ашиглаж болно. Timing sample 1,800-аар хязгаарлагдаж browser memory-д байрлана. HTTP telemetry болон хэрэглэгчийн өгөгдөл хадгалах урсгал үүсгэхгүй. `jsHeapMiB` нь browser дэмжсэн үеийн JS heap бөгөөд GPU memory хэмжилт тусдаа хэрэгтэй. Production build-д энэ dev diagnostic хасагдана.
 
 Staging дээр frame timing, background/idle үеийн render, texture өсөлт, WebView дахин нээх memory-г төхөөрөмжөөр хэмжинэ. Play backend дээр p95/p99 start/finish/leaderboard latency, Redis hit rate, rebuild/queue lag, DB connection, CPU/RAM болон request rate-ийг зэрэг хэмжинэ. 200,000 зэрэг хэрэглэгчийн даацыг frontend build эсвэл Redis key төлөвлөгөөнөөс урьдчилан батлах боломжийн хэмжилт хүлээгдэж байна.
 

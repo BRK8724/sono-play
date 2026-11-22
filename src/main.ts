@@ -8,18 +8,16 @@ import {
   type GameLayout,
   type Insets,
 } from './layout';
-import { localResult, scorePair } from './rules';
+import { BIRD_HALF_HEIGHT, localResult, overlapsPipe, scorePair, type RunEndReason } from './rules';
 import { Frontend, type Phase } from './Frontend';
-import { MockMiniappService } from './mock/MockMiniappService';
 import { service } from './services/createService';
 import { errorMessage } from './services/errors';
 import { ApiError } from './services/ApiClient';
 import { approachSpeedFactor, seededRandom, speedFactor } from './gameplay';
-import { backingPixels, cappedPixelRatio } from './displayScale';
-import { AdaptivePerformance, RENDER_PROFILES, type RenderProfile } from './adaptivePerformance';
-import { birdBodyDisplaySize } from './birdAppearance';
-import { backgroundPeriod, PREVIEW_GAME_CONFIG, previewSpeedFactor } from './gameRules';
-import { screens } from './preview/screens';
+import { backingPixels, gamePixelRatio } from './displayScale';
+import { AdaptivePerformance } from './adaptivePerformance';
+import { birdBodyDisplaySize, birdBodyOffsetY, SONO_SHEET_SIZE } from './birdAppearance';
+import { backgroundPeriod, backgroundVariant } from './gameRules';
 import { assetUrl } from './assets';
 import { installPerformanceDiagnostics } from './performance';
 import {
@@ -31,10 +29,12 @@ import {
 import './style.css';
 
 type PipeView = { shaft: Phaser.GameObjects.TileSprite; cap: Phaser.GameObjects.Image };
+type PanoramaLayer = readonly [Phaser.GameObjects.Image, Phaser.GameObjects.Image];
 type Pair = {
   upper: PipeView;
   lower: PipeView;
   x: number;
+  previousX: number;
   width: number;
   top: number;
   bottom: number;
@@ -48,15 +48,23 @@ const pipeArt = {
   upperJoin: 60,
   lowerJoin: 200,
 };
-// Crop boundary in the supplied demo composite; future art provides separate layers.
-const demoGroundArtY = 1305;
+// Crop boundary in the supplied gameplay composite; separate ground art is pending.
+const classicGroundArtY = 1305;
 const node = (id: string) => document.getElementById(id)!;
 const audio = new GameAudio();
 // Keep collision simulation independent of the display's 60/90/120 Hz cadence.
 const FIXED_STEP_MS = 1000 / 60;
-const MAX_FRAME_DELTA_MS = 1000 / 30;
-let renderProfile: RenderProfile = RENDER_PROFILES.balanced;
-let renderRatio = Math.min(renderProfile.maxDpr, cappedPixelRatio(window.devicePixelRatio));
+const FIXED_STEP_SECONDS = FIXED_STEP_MS / 1000;
+const MAX_FRAME_DELTA_MS = FIXED_STEP_MS * 4;
+const STEP_EPSILON_MS = 1e-7;
+const adaptivePerformance = new AdaptivePerformance(() => {
+  scheduleResize();
+}, navigator);
+const sceneParent = node('game');
+function viewportPixelRatio(width: number, height: number) {
+  return gamePixelRatio(width, height, window.devicePixelRatio, adaptivePerformance.profile.maxDpr);
+}
+let renderRatio = viewportPixelRatio(sceneParent.clientWidth, sceneParent.clientHeight);
 let frontend: Frontend;
 const ui = {
   home: node('home'),
@@ -73,14 +81,11 @@ const ui = {
   offline: node('offline-notice'),
 };
 function nativeInsets(): Partial<Insets> {
-  const supplied =
-    (window as typeof window & { __SONO_SAFE_AREA__?: Partial<Insets> }).__SONO_SAFE_AREA__ ?? {};
   const style = getComputedStyle(node('viewport'));
+  // The canvas already excludes the horizontal insets in CSS.
   return {
-    top: supplied.top ?? parseFloat(style.paddingTop),
-    right: supplied.right ?? parseFloat(style.paddingRight),
-    bottom: supplied.bottom ?? parseFloat(style.paddingBottom),
-    left: supplied.left ?? parseFloat(style.paddingLeft),
+    top: parseFloat(style.paddingTop) || 0,
+    bottom: parseFloat(style.paddingBottom) || 0,
   };
 }
 function show(phase: Phase) {
@@ -92,10 +97,7 @@ function show(phase: Phase) {
   frontend?.refresh();
 }
 async function playAllowed() {
-  if (service.mode === 'mock') {
-    ui.offline.hidden = true;
-    return true;
-  }
+  if (service.isGuest) return true;
   if (service.checkConnection) {
     try {
       await service.checkConnection();
@@ -118,21 +120,36 @@ class Scene extends Phaser.Scene {
   layout!: GameLayout;
   bird!: Phaser.GameObjects.Container;
   body!: Phaser.GameObjects.Image;
+  private wingImages: Phaser.GameObjects.Image[] = [];
+  private wingPose = -1;
+  private flapAge = 0;
   runId: string | null = null;
   starting = false;
-  private staticPreview = false;
   private renderActivity?: RenderActivity;
   private appearanceTask: Promise<void> = Promise.resolve();
   private appearanceRevision = 0;
   private textureTasks = new Map<string, Promise<void>>();
   private backdropKey = '';
+  private panorama?: {
+    texture: Phaser.Textures.Texture;
+    sky: Phaser.GameObjects.Image;
+    ground: PanoramaLayer;
+  };
+  private scroll = 0;
+  private previousScroll = 0;
+  private birdY = 0;
+  private previousBirdY = 0;
+  private birdRotation = 0;
+  private previousBirdRotation = 0;
   private smoke = new Set<Phaser.GameObjects.Arc>();
   backdropBuilds = 0;
   private startGeneration = 0;
   private canceledStartReason: 'APP_BACKGROUND' | 'EXIT' | 'CONNECTION_LOST' | null = null;
   private period = backgroundPeriod();
+  private variant = backgroundVariant();
   private random = Math.random;
-  private spawnElapsed = 0;
+  private spawnX = 0;
+  private spawnProgressMs = 0;
   actualSpeedFactor = 1;
   private pendingFinish: { runId: string; score: number; reason: string } | null = null;
   private resultPosting = false;
@@ -140,10 +157,8 @@ class Scene extends Phaser.Scene {
     return this.pendingFinish !== null;
   }
   appearance = '';
-  private bodyDisplaySize = { width: 74, height: 76 };
+  private bodyDisplaySize = SONO_SHEET_SIZE;
   backgroundId = 'classic';
-  backdrop!: Phaser.GameObjects.TileSprite;
-  groundLayer!: Phaser.GameObjects.TileSprite;
   pipes: Pair[] = [];
   pool: Pair[] = [];
   velocity = 0;
@@ -155,9 +170,16 @@ class Scene extends Phaser.Scene {
     super('SonoPhaseOne');
   }
   preload() {
-    this.load.image('defaultBird', asset('default-bird.webp'));
-    this.load.image('pipeShaft', asset('pipe-shaft.png'));
-    this.load.image('pipeCap', asset('pipe-cap.png'));
+    this.load.image('defaultBird', asset('sono-body.png'));
+    for (let index = 1; index <= 3; index++)
+      this.load.image(`sonoWing${index}`, asset(`sono-wing-${index}.png`));
+    this.load.image('pipeShaft', asset('pipe-shaft.webp'));
+    this.load.image('pipeCap', asset('pipe-cap.webp'));
+    for (const variant of ['evening', 'night'] as const) {
+      this.load.image(`${variant}PipeShaft`, asset(`pipe-${variant}-shaft.webp`));
+      this.load.image(`${variant}PipeLowerCap`, asset(`pipe-${variant}-lower-cap.webp`));
+      this.load.image(`${variant}PipeUpperCap`, asset(`pipe-${variant}-upper-cap.webp`));
+    }
     this.load.image('day', asset('game-background.webp'));
     this.load.on('loaderror', () => {
       if (this.isReady) return;
@@ -183,13 +205,26 @@ class Scene extends Phaser.Scene {
       return;
     }
     this.isReady = true;
+    for (const variant of ['evening', 'night'] as const) {
+      // The supplied shaft has a dark top and bottom border. Crop those edges
+      // before tiling so a long pipe has no horizontal line at each repeat.
+      this.textures.get(`${variant}PipeShaft`).add('repeat', 0, 0, 8, 192, 378);
+    }
     // Zoom around the canvas's top-left so CSS layout and world coordinates align.
     this.cameras.main.setOrigin(0, 0).setZoom(renderRatio);
     this.layout = layoutFor(node('game').clientWidth, node('game').clientHeight, nativeInsets());
     this.buildBackdrop();
-    this.body = this.add.image(0, 0, 'defaultBird').setDisplaySize(54.2, 52.8);
+    this.body = this.add
+      .image(0, 0, 'defaultBird')
+      .setDisplaySize(SONO_SHEET_SIZE.width, SONO_SHEET_SIZE.height);
+    this.wingImages = [1, 2, 3].map((index) =>
+      this.add
+        .image(0, 0, `sonoWing${index}`)
+        .setDisplaySize(SONO_SHEET_SIZE.width, SONO_SHEET_SIZE.height)
+        .setVisible(index === 2),
+    );
     this.bird = this.add
-      .container(this.layout.birdX, this.readyY(), [this.body])
+      .container(this.layout.birdX, this.readyY(), [this.body, ...this.wingImages])
       .setDepth(5)
       .setScale(this.layout.unit);
     this.input.on('pointerdown', () => this.onTap());
@@ -200,44 +235,36 @@ class Scene extends Phaser.Scene {
     });
     this.scale.on(Phaser.Scale.Events.RESIZE, scheduleResize);
     this.go('HOME');
+    scheduleResize();
     void frontend.connect().then(async () => {
       await this.applyAppearance();
-      const params = new URLSearchParams(location.search);
-      const screen = screens.find((item) => item.id === params.get('screen'));
-      if (!screen || !(service instanceof MockMiniappService)) return;
-      service.setPreviewState({ nicknameRequired: false, ...screen.fixture });
-      this.showPreview(screen.scene ?? 'HOME', screen.score ?? 0);
-      frontend.previewScreen(screen);
-      document.body.dataset.previewReady = screen.id;
     });
   }
   private buildBackdrop() {
     const { width, height, ground } = this.layout;
     const key = backdropTextureKey(this.backgroundId, width, height, ground);
-    if (key === this.backdropKey && this.backdrop && this.groundLayer) return;
+    if (key === this.backdropKey && this.panorama) return;
     this.backdropKey = key;
     this.backdropBuilds++;
-    this.backdrop?.destroy();
-    this.groundLayer?.destroy();
-    for (const key of ['sky-panorama', 'ground-panorama']) {
-      if (this.textures.exists(key)) this.textures.remove(key);
+    if (this.panorama) {
+      for (const sprite of [this.panorama.sky, ...this.panorama.ground]) sprite.destroy();
+      this.panorama.texture.remove('sky-panorama');
+      this.panorama.texture.remove('ground-panorama');
     }
-    const source = this.textures
-      .get(this.backgroundId === 'classic' ? 'day' : this.backgroundId)
-      .getSourceImage() as HTMLImageElement;
-    const artGroundY =
-      this.backgroundId === 'city' ? 1347 : this.backgroundId === 'sunset' ? 1375 : demoGroundArtY;
-    const tileWidth = Math.min(Math.ceil(width), 1024);
+    const texture = this.textures.get(this.backgroundId === 'classic' ? 'day' : this.backgroundId);
+    const source = texture.getSourceImage() as HTMLImageElement;
+    const artGroundY = this.backgroundId === 'classic' ? classicGroundArtY : 1310;
     const groundY = Math.round(ground);
-    const drawLayer = (
-      key: string,
+    const layerImage = (
+      name: string,
       sourceTop: number,
       sourceHeight: number,
+      y: number,
       outputHeight: number,
       anchorBottom: boolean,
+      depth: number,
     ) => {
-      const texture = this.textures.createCanvas(key, tileWidth * 2, outputHeight)!;
-      const targetAspect = tileWidth / outputHeight;
+      const targetAspect = width / outputHeight;
       const sourceAspect = source.width / sourceHeight;
       let sx = 0;
       let sy = sourceTop;
@@ -250,35 +277,54 @@ class Scene extends Phaser.Scene {
         sh = source.width / targetAspect;
         if (anchorBottom) sy += sourceHeight - sh;
       }
-      for (let copy = 0; copy < 2; copy++) {
-        texture.context.save();
-        if (copy === 1) {
-          texture.context.translate(tileWidth * 2, 0);
-          texture.context.scale(-1, 1);
-        }
-        texture.context.drawImage(source, sx, sy, sw, sh, 0, 0, tileWidth, outputHeight);
-        texture.context.restore();
-      }
-      texture.refresh();
+      // Both copies share the source image. Moving them avoids redrawing an
+      // intermediate TileSprite canvas on every scrolling frame.
+      const left = Math.round(sx);
+      const top = Math.round(sy);
+      const cropWidth = Math.max(1, Math.round(sx + sw) - left);
+      const cropHeight = Math.max(1, Math.round(sy + sh) - top);
+      texture.add(name, 0, left, top, cropWidth, cropHeight);
+      return (x: number, overdraw = 0) =>
+        this.add
+          .image(x, y, texture, name)
+          .setOrigin(0)
+          .setDisplaySize(width + overdraw, outputHeight)
+          .setDepth(depth)
+          .setVisible(this.phase !== 'HOME');
     };
-    drawLayer('sky-panorama', 0, artGroundY, groundY, true);
-    drawLayer('ground-panorama', artGroundY, source.height - artGroundY, height - groundY, false);
-    this.backdrop = this.add
-      .tileSprite(0, 0, width, groundY, 'sky-panorama')
-      .setOrigin(0)
-      .setDepth(-2);
-    this.groundLayer = this.add
-      .tileSprite(0, groundY, width, height - groundY, 'ground-panorama')
-      .setOrigin(0)
-      .setDepth(4);
-    this.backdrop.setVisible(this.phase !== 'HOME');
-    this.groundLayer.setVisible(this.phase !== 'HOME');
-    // Final night artwork is pending. This tint previews the BRD time-of-day state.
-    if (this.period === 'night') {
-      this.backdrop.setTint(0x9ea6ce);
-      this.groundLayer.setTint(0xc6bdd1);
-    }
+    const sky = layerImage('sky-panorama', 0, artGroundY, 0, groundY, true, -2)(0);
+    const makeGround = layerImage(
+      'ground-panorama',
+      artGroundY,
+      source.height - artGroundY,
+      groundY,
+      height - groundY,
+      false,
+      4,
+    );
+    this.panorama = {
+      texture,
+      // The sky art has slightly different edge colors. A static full-width
+      // frame avoids a vertical join through the open sky during flight.
+      sky,
+      ground: [makeGround(0, 1), makeGround(width, 1).setFlipX(true)],
+    };
+    this.drawBackdrop(this.scroll);
     document.body.dataset.period = this.period;
+  }
+  private drawBackdrop(scroll: number) {
+    if (!this.panorama) return;
+    this.positionPanorama(this.panorama.ground, scroll * 80);
+  }
+  private positionPanorama([first, second]: PanoramaLayer, distance: number) {
+    const width = this.layout.width;
+    const offset = distance % (width * 2);
+    first.x = offset < width ? -offset : width * 2 - offset;
+    second.x = width - offset;
+  }
+  private setBackdropVisible(visible: boolean) {
+    if (!this.panorama) return;
+    for (const sprite of [this.panorama.sky, ...this.panorama.ground]) sprite.setVisible(visible);
   }
   resizeForViewport() {
     if (!this.bird) return;
@@ -296,46 +342,70 @@ class Scene extends Phaser.Scene {
     this.layout = next;
     this.buildBackdrop();
     this.bird.x = next.birdX;
-    this.bird.y =
-      this.phase === 'READY'
-        ? this.readyY()
-        : next.safe.top +
-          ((this.bird.y - old.safe.top) * (next.ground - next.safe.top)) /
-            Math.max(1, old.ground - old.safe.top);
     this.bird.setScale(next.unit);
-    this.velocity *= next.unit / old.unit;
+    const scale = next.unit / old.unit;
+    this.velocity *= scale;
+    const gap = this.pipeGap();
+    const playing = this.phase === 'PLAYING';
+    const reanchorX = (x: number) => next.birdX + (x - old.birdX) * scale;
+    if (playing) this.spawnX = Math.max(next.width + 18 * next.unit, reanchorX(this.spawnX));
+    let oldMinY = old.safe.top;
+    let oldMaxY = old.ground;
+    let nextMinY = next.safe.top;
+    let nextMaxY = next.ground;
     for (const pair of this.pipes) {
-      pair.x = (pair.x / old.width) * next.width;
-      const opening = resizeOpening(old, next, pair);
+      pair.x = this.phase === 'READY' ? next.width * 0.57 : reanchorX(pair.x);
+      pair.previousX = pair.x;
+      const opening = resizeOpening(old, next, pair, gap);
+      pair.width = next.pipeWidth;
+      // Keep the bird's relative clearance when resizing mid-obstacle.
+      if (playing && overlapsPipe(pair, next.birdX, next.unit)) {
+        oldMinY = Math.max(oldMinY, pair.top + BIRD_HALF_HEIGHT * old.unit);
+        oldMaxY = Math.min(oldMaxY, pair.bottom - BIRD_HALF_HEIGHT * old.unit);
+        nextMinY = Math.max(nextMinY, opening.top + BIRD_HALF_HEIGHT * next.unit);
+        nextMaxY = Math.min(nextMaxY, opening.bottom - BIRD_HALF_HEIGHT * next.unit);
+      }
       pair.top = opening.top;
       pair.bottom = opening.bottom;
-      pair.width = next.pipeWidth;
       this.drawPair(pair);
     }
+    const oldY = playing ? this.birdY : this.bird.y;
+    const progress = (oldY - oldMinY) / Math.max(1, oldMaxY - oldMinY);
+    if (this.phase === 'READY') this.birdY = this.readyY();
+    else if (playing) {
+      const ceiling = next.safe.top + 28 * next.unit;
+      const floor = next.ground - 28 * next.unit;
+      const lower = Math.max(ceiling, nextMinY);
+      const upper = Math.min(floor, nextMaxY);
+      this.birdY =
+        lower <= upper
+          ? Phaser.Math.Clamp(nextMinY + progress * (nextMaxY - nextMinY), lower, upper)
+          : ceiling + (floor - ceiling) * 0.5;
+    } else {
+      this.birdY = nextMinY + progress * (nextMaxY - nextMinY);
+    }
+    this.bird.y = this.previousBirdY = this.birdY;
     if (this.phase === 'READY' && this.pipes.length > 0) {
       this.positionReadyAction(this.pipes[0]);
-      if (this.staticPreview)
-        this.bird.y = (this.pipes[0].top + this.pipes[0].bottom) / 2 + 25 * next.unit;
     }
     this.syncRendering();
   }
   private afterRender() {
-    const animatedPhase =
-      !this.staticPreview && (this.phase === 'READY' || this.phase === 'PLAYING');
+    const animatedPhase = this.phase === 'READY' || this.phase === 'PLAYING';
     const hasEffects =
       !animatedPhase && (this.smoke.size > 0 || (this.body && this.tweens.isTweening(this.body)));
-    if (animatedPhase) adaptivePerformance.sample(performance.now());
+    if (this.phase === 'PLAYING') adaptivePerformance.sample(this.game.loop.now);
+    else adaptivePerformance.pause();
     this.renderActivity?.afterRender(Boolean(hasEffects));
   }
   private syncRendering() {
-    this.renderActivity?.setContinuous(
-      !this.staticPreview && (this.phase === 'READY' || this.phase === 'PLAYING'),
-    );
+    this.renderActivity?.setContinuous(this.phase === 'READY' || this.phase === 'PLAYING');
   }
   requestRender() {
     this.renderActivity?.requestFrame();
   }
   setRenderingVisible(visible: boolean) {
+    if (!visible) adaptivePerformance.pause();
     this.renderActivity?.setVisible(visible);
   }
   private clearEffects() {
@@ -355,15 +425,12 @@ class Scene extends Phaser.Scene {
   go(next: Phase) {
     this.startGeneration++;
     if (this.starting) this.canceledStartReason = 'EXIT';
-    this.staticPreview = false;
     this.phase = next;
     if (next === 'READY') {
-      adaptivePerformance.resetWindow();
       void this.applyAppearance();
     }
     show(next);
-    this.backdrop.setVisible(next !== 'HOME');
-    this.groundLayer.setVisible(next !== 'HOME');
+    this.setBackdropVisible(next !== 'HOME');
     this.bird.setVisible(next === 'READY' || next === 'PLAYING');
     if (next === 'HOME' || next === 'READY') {
       this.clearEffects();
@@ -372,45 +439,27 @@ class Scene extends Phaser.Scene {
       ui.score.textContent = '0';
       this.velocity = 0;
       this.actualSpeedFactor = 1;
-      this.bird.setPosition(this.layout.birdX, this.readyY()).setRotation(0);
+      this.resetBirdPose(this.readyY());
     }
     if (next === 'READY') {
-      this.backdrop.tilePositionX = 0;
-      this.groundLayer.tilePositionX = 0;
+      this.elapsed = 0;
+      this.scroll = 0;
+      this.previousScroll = 0;
+      this.drawBackdrop(0);
       frontend.refresh();
       ui.theme.textContent = this.period === 'day' ? 'Өдөр' : 'Шөнө';
       const { width, ground, safe } = this.layout;
       const gap = this.pipeGap();
       const top = safe.top + (ground - safe.top) * 0.5 - gap / 2;
-      this.previewPair(width * 0.57, top, top + gap);
+      this.placeReadyPipe(width * 0.57, top, top + gap);
       this.positionReadyAction(this.pipes[0]);
     }
     this.syncRendering();
   }
-  showPreview(phase: Phase, score: number) {
-    this.go('READY');
-    this.clearPairs();
-    const { width, ground, safe, unit } = this.layout;
-    const top = safe.top + (ground - safe.top) * 0.38;
-    const bottom = top + 166 * unit;
-    this.previewPair(width * 0.28, top, bottom);
-    this.previewPair(width * 0.98, top - 130 * unit, bottom - 130 * unit);
-    this.positionReadyAction(this.pipes[0]);
-    this.phase = phase;
-    this.displayScore = score;
-    ui.score.textContent = String(score);
-    this.bird.setPosition(width * 0.3, (top + bottom) / 2 + 25 * unit);
-    this.bird.setVisible(phase !== 'HOME');
-    this.backdrop.setVisible(phase !== 'HOME');
-    this.groundLayer.setVisible(phase !== 'HOME');
-    if (phase === 'HOME') this.clearPairs();
-    if (phase === 'GAME_OVER') {
-      this.bird.setPosition(width * 0.72, ground - 58 * unit).setRotation(1.15);
-      frontend.showResult({ score, reason: 'COLLISION', verification: 'DEMO' });
-    }
-    show(phase);
-    this.staticPreview = true;
-    this.syncRendering();
+  private resetBirdPose(y: number) {
+    this.birdY = this.previousBirdY = y;
+    this.birdRotation = this.previousBirdRotation = 0;
+    this.bird.setPosition(this.layout.birdX, y).setRotation(0);
   }
   private positionReadyAction(pair: Pair) {
     ui.ready.style.setProperty('--ready-action-y', `${(pair.top + pair.bottom) / 2}px`);
@@ -447,31 +496,40 @@ class Scene extends Phaser.Scene {
 
   private applyAppearance() {
     const player = service.snapshot();
-    const backgroundId = player.selectedBackground;
+    const backgroundId = this.variant === 'day' ? 'classic' : this.variant;
     const appearance = player.selectedBird;
     const revision = ++this.appearanceRevision;
     const backgroundKey = backgroundId === 'classic' ? 'day' : backgroundId;
     const backgroundFile =
       backgroundId === 'classic' ? 'game-background.webp' : `${backgroundId}-background.webp`;
     const tasks = [this.ensureImage(backgroundKey, asset(backgroundFile))];
-    if (appearance !== 'pilot') {
-      const characterFile =
-        appearance === 'santa'
-          ? 'assets/final/santa-sono-17ec9cf4.png'
-          : 'assets/final/gold-sono-871113b4.png';
-      tasks.push(this.ensureImage(appearance, assetUrl(characterFile)));
+    if (appearance === 'santa') tasks.push(this.ensureImage('santaBody', asset('santa-body.webp')));
+    if (appearance === 'gold') {
+      tasks.push(this.ensureImage('goldBody', asset('gold-body.webp')));
+      for (let index = 1; index <= 3; index++)
+        tasks.push(this.ensureImage(`goldWing${index}`, asset(`gold-wing-${index}.webp`)));
     }
     this.appearanceTask = Promise.all(tasks)
       .then(() => {
         if (revision !== this.appearanceRevision) return;
         this.backgroundId = backgroundId;
         this.appearance = appearance;
+        for (const pair of [...this.pipes, ...this.pool]) this.setPipeTextures(pair);
         node('sky').style.backgroundImage = `url("${asset(backgroundFile)}")`;
         this.buildBackdrop();
         this.bodyDisplaySize = birdBodyDisplaySize(appearance);
         this.body
-          .setTexture(appearance === 'pilot' ? 'defaultBird' : appearance)
-          .setDisplaySize(this.bodyDisplaySize.width, this.bodyDisplaySize.height);
+          .setTexture(
+            appearance === 'pilot'
+              ? 'defaultBird'
+              : appearance === 'gold'
+                ? 'goldBody'
+                : 'santaBody',
+          )
+          .setDisplaySize(this.bodyDisplaySize.width, this.bodyDisplaySize.height)
+          .setY(birdBodyOffsetY(appearance));
+        this.configureWings(appearance);
+        this.setWingPose(1);
         this.bird.setScale(this.layout.unit);
         this.requestRender();
       })
@@ -479,13 +537,35 @@ class Scene extends Phaser.Scene {
         if (revision !== this.appearanceRevision) return;
         this.appearance = 'pilot';
         this.backgroundId = 'classic';
-        this.body.setTexture('defaultBird').setDisplaySize(54.2, 52.8);
+        this.bodyDisplaySize = SONO_SHEET_SIZE;
+        this.body
+          .setTexture('defaultBird')
+          .setDisplaySize(SONO_SHEET_SIZE.width, SONO_SHEET_SIZE.height)
+          .setY(0);
+        this.configureWings('pilot');
+        this.setWingPose(1);
         node('sky').style.backgroundImage = `url("${asset('game-background.webp')}")`;
         this.buildBackdrop();
         frontend.notify('Зарим зураг ачаалсангүй. Үндсэн загварыг ашиглаж байна.');
         this.requestRender();
       });
     return this.appearanceTask;
+  }
+  private configureWings(appearance: string) {
+    this.wingImages.forEach((wing, index) => {
+      if (appearance === 'gold') {
+        wing
+          .setTexture(`goldWing${index + 1}`)
+          .setDisplaySize(this.bodyDisplaySize.width, this.bodyDisplaySize.height)
+          // The gold frames have different source positions; align their roots.
+          .setY(([0, 27, 29][index] * this.bodyDisplaySize.height) / 118);
+      } else {
+        wing
+          .setTexture(`sonoWing${index + 1}`)
+          .setDisplaySize(SONO_SHEET_SIZE.width, SONO_SHEET_SIZE.height)
+          .setY(0);
+      }
+    });
   }
   async start() {
     if (this.phase !== 'READY' || this.starting || frontend.modalOpen) return;
@@ -510,16 +590,16 @@ class Scene extends Phaser.Scene {
         return;
       }
       this.random = seededRandom(service.gameSeed ?? String(Date.now()));
-      this.staticPreview = false;
       this.displayScore = 0;
       ui.score.textContent = '0';
       this.velocity = 0;
       this.elapsed = 0;
       this.accumulator = 0;
-      this.spawnElapsed = 0;
+      this.spawnX = this.layout.width + 18 * this.layout.unit;
+      this.spawnProgressMs = 0;
       this.actualSpeedFactor = 1;
       this.clearPairs();
-      this.bird.setPosition(this.layout.birdX, this.playingY()).setRotation(0);
+      this.resetBirdPose(this.playingY());
       this.phase = 'PLAYING';
       show('PLAYING');
       this.spawn();
@@ -541,95 +621,118 @@ class Scene extends Phaser.Scene {
   }
   flap() {
     if (this.phase !== 'PLAYING') return;
-    const config = service.gameConfig ?? PREVIEW_GAME_CONFIG;
+    const config = service.gameConfig;
+    if (!config) throw new ApiError('GAME_CONFIG_REQUIRED');
     this.velocity = config.jumpVelocity * this.layout.unit;
-    this.bird.rotation = -0.25;
-    if (this.appearance !== 'pilot') {
-      this.tweens.killTweensOf(this.body);
-      this.body.setDisplaySize(this.bodyDisplaySize.width, (this.bodyDisplaySize.height * 70) / 76);
-      this.tweens.add({
-        targets: this.body,
-        scaleY: this.bodyDisplaySize.height / this.body.height,
-        duration: 150,
-      });
-    }
+    this.bird.rotation = this.birdRotation = this.previousBirdRotation = -0.25;
+    this.flapAge = 0;
+    this.setWingPose(2);
     audio.tone(530, 0.07);
     if (this.hapticsEnabled) navigator.vibrate?.(8);
   }
+  private setWingPose(pose: number) {
+    if (this.wingPose === pose) return;
+    this.wingPose = pose;
+    this.wingImages.forEach((wing, index) => wing.setVisible(index === pose));
+  }
   private makePair(): Pair {
-    const makeView = (): PipeView => ({
-      shaft: this.add.tileSprite(0, 0, 1, 1, 'pipeShaft').setDepth(2),
-      cap: this.add.image(0, 0, 'pipeCap').setOrigin(0.5, 0).setDepth(3),
+    const shaftKey = this.variant === 'day' ? 'pipeShaft' : `${this.variant}PipeShaft`;
+    const upperCapKey = this.variant === 'day' ? 'pipeCap' : `${this.variant}PipeUpperCap`;
+    const lowerCapKey = this.variant === 'day' ? 'pipeCap' : `${this.variant}PipeLowerCap`;
+    const makeView = (capKey: string): PipeView => ({
+      shaft: this.add
+        .tileSprite(0, 0, 1, 1, shaftKey, this.variant === 'day' ? undefined : 'repeat')
+        .setDepth(2),
+      cap: this.add.image(0, 0, capKey).setOrigin(0.5, 0).setDepth(3),
     });
     return {
-      upper: makeView(),
-      lower: makeView(),
+      upper: makeView(upperCapKey),
+      lower: makeView(lowerCapKey),
       x: 0,
+      previousX: 0,
       width: this.layout.pipeWidth,
       top: 0,
       bottom: 0,
       scored: false,
     };
   }
+  private setPipeTextures(pair: Pair) {
+    const variant = this.backgroundId === 'classic' ? 'day' : this.backgroundId;
+    const shaft = variant === 'day' ? 'pipeShaft' : `${variant}PipeShaft`;
+    const shaftFrame = variant === 'day' ? undefined : 'repeat';
+    pair.upper.shaft.setTexture(shaft, shaftFrame);
+    pair.lower.shaft.setTexture(shaft, shaftFrame);
+    pair.upper.cap.setTexture(variant === 'day' ? 'pipeCap' : `${variant}PipeUpperCap`);
+    pair.lower.cap.setTexture(variant === 'day' ? 'pipeCap' : `${variant}PipeLowerCap`);
+    if (this.pipes.includes(pair)) this.drawPair(pair);
+  }
   private drawPair(pair: Pair) {
     const { pipeWidth, ground } = this.layout;
-    const artScale = pipeWidth / pipeArt.shaft.width;
-    const capWidth = pipeArt.collar.width * artScale;
-    const capHeight = pipeArt.collar.height * artScale;
-    const upperCapY = pair.top - capHeight;
-    const lowerShaftY = pair.bottom + pipeArt.lowerJoin * artScale;
+    const themed = this.backgroundId !== 'classic';
+    const artScale = pipeWidth / (themed ? 192 : pipeArt.shaft.width);
+    const capWidth = (themed ? 250 : pipeArt.collar.width) * artScale;
+    const upperCapHeight = (themed ? 138 : pipeArt.collar.height) * artScale;
+    const lowerCapHeight = (themed ? 125 : pipeArt.collar.height) * artScale;
+    const upperCapY = pair.top - upperCapHeight;
+    const lowerShaftY = pair.bottom + (themed ? 110 : pipeArt.lowerJoin) * artScale;
+    const upperShaftHeight = Math.max(1, upperCapY + (themed ? 20 : pipeArt.upperJoin) * artScale);
+    const lowerShaftHeight = Math.max(1, ground - lowerShaftY + 8 * this.layout.unit);
     const x = pair.x + pipeWidth / 2;
     pair.width = pipeWidth;
     pair.upper.shaft
       .setPosition(x, 0)
       .setOrigin(0.5, 0)
       // Continue beneath the opaque snow so transparent padding cannot expose a gap.
-      .setSize(pipeWidth, Math.max(1, upperCapY + pipeArt.upperJoin * artScale))
-      .setTileScale(artScale)
+      .setSize(pipeWidth, upperShaftHeight)
+      .setTileScale(artScale, themed ? upperShaftHeight / 378 : artScale)
       .setVisible(true);
-    pair.upper.cap.setPosition(x, upperCapY).setDisplaySize(capWidth, capHeight).setVisible(true);
-    pair.lower.cap.setPosition(x, pair.bottom).setDisplaySize(capWidth, capHeight).setVisible(true);
+    pair.upper.cap
+      .setPosition(x, upperCapY)
+      .setDisplaySize(capWidth, upperCapHeight)
+      .setVisible(true);
+    pair.lower.cap
+      .setPosition(x, pair.bottom)
+      .setDisplaySize(capWidth, lowerCapHeight)
+      .setVisible(true);
     pair.lower.shaft
       .setPosition(x, lowerShaftY)
       .setOrigin(0.5, 0)
-      .setSize(pipeWidth, Math.max(1, ground - lowerShaftY + 8 * this.layout.unit))
-      .setTileScale(artScale)
+      .setSize(pipeWidth, lowerShaftHeight)
+      .setTileScale(artScale, themed ? lowerShaftHeight / 378 : artScale)
       .setVisible(true);
   }
   private placePair(pair: Pair, x: number, top: number, bottom: number) {
-    pair.x = x;
+    pair.x = pair.previousX = x;
     pair.top = top;
     pair.bottom = bottom;
     pair.scored = false;
     this.drawPair(pair);
     this.pipes.push(pair);
   }
-  private previewPair(x: number, top: number, bottom: number) {
+  private placeReadyPipe(x: number, top: number, bottom: number) {
     this.placePair(this.pool.pop() ?? this.makePair(), x, top, bottom);
   }
   private pipeGap() {
-    const config = service.gameConfig ?? PREVIEW_GAME_CONFIG;
+    const configuredGap = service.gameConfig?.pipeGap ?? 150;
     return Math.min(
-      config.pipeGap * this.layout.unit,
+      configuredGap * this.layout.unit,
       (this.layout.ground - this.layout.safe.top) * 0.5,
     );
   }
   spawn() {
-    const { width, unit } = this.layout;
     const gap = this.pipeGap();
     const previous = this.pipes.at(-1) ?? {
-      top: this.bird.y - gap / 2,
-      bottom: this.bird.y + gap / 2,
+      top: this.birdY - gap / 2,
+      bottom: this.birdY + gap / 2,
     };
     const [minimum, maximum] = reachableCenterRange(this.layout, gap, previous);
     const center = minimum + this.random() * (maximum - minimum);
     this.placePair(
       this.pool.pop() ?? this.makePair(),
-      width + 18 * unit,
+      this.spawnX,
       center - gap / 2,
       center + gap / 2,
     );
-    this.spawnElapsed = 0;
   }
   clearPairs() {
     for (const pair of this.pipes) {
@@ -641,10 +744,11 @@ class Scene extends Phaser.Scene {
     }
     this.pipes.length = 0;
   }
-  terminate(reason: 'COLLISION' | 'APP_BACKGROUND' | 'CONNECTION_LOST' | 'EXIT') {
+  terminate(reason: RunEndReason) {
     if (this.starting) {
       this.startGeneration++;
-      this.canceledStartReason = reason === 'COLLISION' ? 'EXIT' : reason;
+      this.canceledStartReason =
+        reason === 'COLLISION' || reason === 'TIME_LIMIT' ? 'EXIT' : reason;
     }
     if (this.phase !== 'PLAYING' || !this.runId) return;
     this.terminateCount++;
@@ -656,9 +760,9 @@ class Scene extends Phaser.Scene {
         .setRotation(1.25)
         .setPosition(
           this.layout.birdX,
-          Math.min(this.bird.y, this.layout.ground - 35 * this.layout.unit),
+          Math.min(this.birdY, this.layout.ground - 35 * this.layout.unit),
         );
-      for (let i = 0; i < renderProfile.smokeCount; i++) {
+      for (let i = 0; i < adaptivePerformance.profile.smokeCount; i++) {
         const smoke = this.add
           .circle(this.bird.x, this.bird.y, (5 + i) * this.layout.unit, 0xb6b3b6, 0.65)
           .setDepth(6);
@@ -679,7 +783,7 @@ class Scene extends Phaser.Scene {
     }
     this.pendingFinish = {
       runId: this.runId,
-      score: localResult(this.displayScore, reason).displayScore,
+      score: localResult(this.displayScore).displayScore,
       reason,
     };
     this.runId = null;
@@ -721,41 +825,65 @@ class Scene extends Phaser.Scene {
   update(_time: number, delta: number) {
     // Apply a ScaleManager resize before this frame's collision simulation.
     resizeFrames.flush();
-    this.accumulator += Math.min(delta, MAX_FRAME_DELTA_MS);
-    while (this.accumulator >= FIXED_STEP_MS) {
-      this.step(FIXED_STEP_MS / 1000);
-      this.accumulator -= FIXED_STEP_MS;
-    }
-  }
-  step(dt: number) {
-    if (this.staticPreview) return;
-    const { unit, ground, birdX, pipeWidth } = this.layout;
     if (this.phase === 'READY') {
-      this.elapsed += dt;
-      this.bird.y = this.readyY() + Math.sin(this.elapsed * 3) * 8 * unit;
+      this.elapsed += Math.min(delta, MAX_FRAME_DELTA_MS) / 1000;
+      this.setWingPose([2, 1, 0, 1][Math.floor(this.elapsed * 8) % 4]);
+      this.bird.y = this.readyY() + Math.sin(this.elapsed * 3) * 8 * this.layout.unit;
       return;
     }
     if (this.phase !== 'PLAYING') return;
+    this.flapAge += delta;
+    this.setWingPose(this.flapAge < 80 ? 2 : this.flapAge < 160 ? 1 : 0);
+    if (service.runDeadline !== undefined && performance.now() >= service.runDeadline) {
+      this.terminate('TIME_LIMIT');
+      return;
+    }
+    this.accumulator = Math.min(this.accumulator + delta, MAX_FRAME_DELTA_MS);
+    while (this.accumulator + STEP_EPSILON_MS >= FIXED_STEP_MS && this.phase === 'PLAYING') {
+      this.step(FIXED_STEP_SECONDS);
+      this.accumulator = Math.max(0, this.accumulator - FIXED_STEP_MS);
+    }
+    if (this.phase === 'PLAYING') this.renderFlight(this.accumulator / FIXED_STEP_MS);
+  }
+  private renderFlight(alpha: number) {
+    // Interpolate render positions independently of the 60 Hz collision state.
+    this.bird.y = Phaser.Math.Linear(this.previousBirdY, this.birdY, alpha);
+    this.bird.rotation = Phaser.Math.Linear(this.previousBirdRotation, this.birdRotation, alpha);
+    this.drawBackdrop(Phaser.Math.Linear(this.previousScroll, this.scroll, alpha));
+    for (const pair of this.pipes) {
+      const x = Phaser.Math.Linear(pair.previousX, pair.x, alpha) + pair.width / 2;
+      pair.upper.shaft.x = x;
+      pair.upper.cap.x = x;
+      pair.lower.shaft.x = x;
+      pair.lower.cap.x = x;
+    }
+  }
+  step(dt: number) {
+    if (this.phase !== 'PLAYING') return;
+    const { unit, ground, birdX, pipeWidth } = this.layout;
     this.elapsed += dt;
-    this.backdrop.tilePositionX += 30 * unit * dt;
-    this.groundLayer.tilePositionX += 80 * unit * dt;
-    const config = service.gameConfig ?? PREVIEW_GAME_CONFIG;
+    this.previousScroll = this.scroll;
+    this.scroll += unit * dt;
+    const config = service.gameConfig;
+    if (!config) {
+      this.terminate('CONNECTION_LOST');
+      return;
+    }
     this.velocity += config.gravity * unit * dt;
-    this.bird.y += this.velocity * dt;
-    this.bird.rotation = Phaser.Math.Clamp(this.velocity / (750 * unit), -0.36, 0.78);
+    this.previousBirdY = this.birdY;
+    this.previousBirdRotation = this.birdRotation;
+    this.birdY += this.velocity * dt;
+    this.birdRotation = Phaser.Math.Clamp(this.velocity / (750 * unit), -0.36, 0.78);
     const ceiling = this.layout.safe.top + 28 * unit;
-    if (this.bird.y < ceiling) {
-      this.bird.y = ceiling;
+    if (this.birdY < ceiling) {
+      this.birdY = ceiling;
       this.velocity = 0;
     }
-    if (this.bird.y + 19 * unit >= ground - 8 * unit) {
+    if (this.birdY + 19 * unit >= ground - 8 * unit) {
       this.terminate('COLLISION');
       return;
     }
-    const targetFactor =
-      service.mode === 'mock'
-        ? previewSpeedFactor(this.displayScore)
-        : speedFactor(config, this.displayScore);
+    const targetFactor = speedFactor(config, this.displayScore);
     this.actualSpeedFactor = approachSpeedFactor(
       this.actualSpeedFactor,
       targetFactor,
@@ -764,25 +892,24 @@ class Scene extends Phaser.Scene {
     );
     const factor = this.actualSpeedFactor;
     const speed = config.scrollSpeed * factor * unit;
-    this.spawnElapsed += dt;
-    if (this.spawnElapsed >= config.pipeIntervalMs / factor / 1000) this.spawn();
+    this.spawnProgressMs += dt * 1000 * factor;
+    if (this.spawnProgressMs >= config.pipeIntervalMs) {
+      // Retain fractional progress across fixed steps and speed transitions.
+      this.spawnProgressMs %= config.pipeIntervalMs;
+      this.spawn();
+    }
     for (const pair of this.pipes) {
+      pair.previousX = pair.x;
       pair.x -= speed * dt;
-      const x = pair.x + pipeWidth / 2;
-      pair.upper.shaft.x = x;
-      pair.upper.cap.x = x;
-      pair.lower.shaft.x = x;
-      pair.lower.cap.x = x;
-      const overlap =
-        birdX + 18 * unit > pair.x + 6 * unit && birdX - 18 * unit < pair.x + pipeWidth - 6 * unit;
       if (
-        overlap &&
-        (this.bird.y - 17 * unit < pair.top || this.bird.y + 17 * unit > pair.bottom)
+        overlapsPipe(pair, birdX, unit) &&
+        (this.birdY < pair.top + BIRD_HALF_HEIGHT * unit ||
+          this.birdY > pair.bottom - BIRD_HALF_HEIGHT * unit)
       ) {
         this.terminate('COLLISION');
         return;
       }
-      if (scorePair(pair, birdX - 10 * unit)) {
+      if (scorePair(pair, birdX, unit)) {
         this.displayScore++;
         ui.score.textContent = String(this.displayScore);
 
@@ -802,10 +929,8 @@ class Scene extends Phaser.Scene {
   }
 }
 const scene = new Scene();
-frontend = new Frontend(service, audio, scene, (scenario) => {
-  if (service instanceof MockMiniappService) service.setScenario(scenario);
-});
-if (import.meta.env.DEV) Object.assign(window, { __SONO_SCENE__: scene, __SONO_DEMO__: service });
+frontend = new Frontend(service, audio, scene);
+if (import.meta.env.DEV) Object.assign(window, { __SONO_SCENE__: scene });
 const game = new Phaser.Game({
   type: Phaser.CANVAS,
   parent: 'game',
@@ -815,18 +940,12 @@ const game = new Phaser.Game({
   scale: {
     mode: Phaser.Scale.NONE,
     parent: 'game',
-    width: backingPixels(node('game').clientWidth, renderRatio),
-    height: backingPixels(node('game').clientHeight, renderRatio),
+    width: backingPixels(sceneParent.clientWidth, renderRatio),
+    height: backingPixels(sceneParent.clientHeight, renderRatio),
     zoom: 1 / renderRatio,
     autoCenter: Phaser.Scale.NO_CENTER,
   },
   scene,
-});
-const adaptivePerformance = new AdaptivePerformance((profile) => {
-  renderProfile = profile;
-  renderRatio = Math.min(cappedPixelRatio(window.devicePixelRatio), profile.maxDpr);
-  scene.requestRender();
-  scheduleResize();
 });
 if (import.meta.env.DEV)
   installPerformanceDiagnostics(game, () => ({
@@ -839,7 +958,7 @@ if (import.meta.env.DEV)
     gameFrameMs: Math.round(game.loop.delta * 100) / 100,
     clockSmoothing: game.loop.smoothStep,
     backingRatio: game.canvas.width / Math.max(1, game.canvas.clientWidth),
-    qualityTier: renderProfile.tier,
+    qualityTier: adaptivePerformance.profile.tier,
     speedFactor: scene.actualSpeedFactor,
   }));
 let fitting = false;
@@ -847,10 +966,17 @@ const resizeFrames = createFrameScheduler(fit);
 function scheduleResize() {
   if (!fitting) resizeFrames.request();
 }
+function unzoomedVisualViewport() {
+  const view = window.visualViewport;
+  return view && Math.abs(view.scale - 1) < 0.01 ? view : undefined;
+}
+function scheduleVisualResize() {
+  if (unzoomedVisualViewport()) scheduleResize();
+}
 function fit() {
   fitting = true;
   try {
-    const view = window.visualViewport;
+    const view = unzoomedVisualViewport();
     const width = Math.min(window.innerWidth, view?.width ?? window.innerWidth);
     const height = Math.min(window.innerHeight, view?.height ?? window.innerHeight);
     const insets =
@@ -858,29 +984,31 @@ function fit() {
     const host = node('viewport');
     host.style.width = `${width}px`;
     host.style.height = `${height}px`;
+    host.style.top = `${Math.max(0, view?.offsetTop ?? 0)}px`;
+    host.style.left = `${Math.max(0, view?.offsetLeft ?? 0)}px`;
     for (const side of ['top', 'right', 'bottom', 'left'] as const) {
-      host.style.setProperty(
-        `--safe-${side}`,
-        insets[side] === undefined
-          ? `env(safe-area-inset-${side}, 0px)`
-          : `${Math.max(0, insets[side]!)}px`,
-      );
+      const inset = insets[side];
+      if (typeof inset === 'number' && Number.isFinite(inset))
+        host.style.setProperty(`--safe-${side}`, `${Math.max(0, inset)}px`);
+      else host.style.removeProperty(`--safe-${side}`);
     }
     if (scene.bird) {
-      const parent = node('game');
-      const nextRatio = Math.min(cappedPixelRatio(window.devicePixelRatio), renderProfile.maxDpr);
+      const parent = sceneParent;
+      const cssWidth = parent.clientWidth;
+      const cssHeight = parent.clientHeight;
+      const nextRatio = viewportPixelRatio(cssWidth, cssHeight);
       if (nextRatio !== renderRatio) {
         renderRatio = nextRatio;
         game.scale.setZoom(1 / renderRatio);
         scene.cameras.main.setZoom(renderRatio);
       }
-      const backingWidth = backingPixels(parent.clientWidth, renderRatio);
-      const backingHeight = backingPixels(parent.clientHeight, renderRatio);
+      const backingWidth = backingPixels(cssWidth, renderRatio);
+      const backingHeight = backingPixels(cssHeight, renderRatio);
       if (game.scale.width !== backingWidth || game.scale.height !== backingHeight)
         game.scale.resize(backingWidth, backingHeight);
       // Phaser does not clear an older CSS zoom size when the ratio returns to 1.
-      game.canvas.style.width = `${parent.clientWidth}px`;
-      game.canvas.style.height = `${parent.clientHeight}px`;
+      game.canvas.style.width = `${cssWidth}px`;
+      game.canvas.style.height = `${cssHeight}px`;
       scene.resizeForViewport();
       scene.requestRender();
     }
@@ -889,7 +1017,8 @@ function fit() {
   }
 }
 window.addEventListener('resize', scheduleResize);
-window.visualViewport?.addEventListener('resize', scheduleResize);
+window.visualViewport?.addEventListener('resize', scheduleVisualResize);
+window.visualViewport?.addEventListener('scroll', scheduleVisualResize, { passive: true });
 window.addEventListener('sono-safe-area', scheduleResize);
 function watchPixelRatio() {
   const query = window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
@@ -951,7 +1080,6 @@ function checkRunningConnection() {
 }
 window.addEventListener('offline', checkRunningConnection);
 window.addEventListener('online', checkRunningConnection);
-if (service.mode === 'api')
-  window.setInterval(() => {
-    if (scene.phase === 'PLAYING' && !document.hidden) checkRunningConnection();
-  }, 30000);
+window.setInterval(() => {
+  if (scene.phase === 'PLAYING' && !document.hidden) checkRunningConnection();
+}, 30000);

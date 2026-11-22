@@ -24,6 +24,7 @@ function savePreference(key: string, enabled: boolean): void {
 export class GameAudio {
   private context?: AudioContext;
   private musicBus?: GainNode;
+  private crashBuffer?: AudioBuffer;
   private timer?: ReturnType<typeof setInterval>;
   private nextNote = 0;
   private beat = 0;
@@ -36,13 +37,18 @@ export class GameAudio {
   async unlock() {
     try {
       if (!this.context) {
-        this.context = new AudioContext();
+        const Audio =
+          window.AudioContext ??
+          (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+            .webkitAudioContext;
+        if (!Audio) return;
+        this.context = new Audio();
         this.musicBus = this.context.createGain();
         this.musicBus.gain.value = this.music ? 0.22 : 0;
         this.musicBus.connect(this.context.destination);
-        this.timer = setInterval(() => this.schedule(), 100);
       }
-      if (this.active && this.context.state === 'suspended') await this.context.resume();
+      if (this.active && this.context.state !== 'running') await this.context.resume();
+      this.syncMusicTimer();
     } catch {
       /* A host may disallow audio. Gameplay remains available. */
     }
@@ -53,14 +59,19 @@ export class GameAudio {
     if (!active) void this.context?.suspend().catch(() => {});
     else {
       this.nextNote = (this.context?.currentTime ?? 0) + 0.05;
-      void this.context?.resume().catch(() => {});
+      void this.context?.resume().then(
+        () => this.syncMusicTimer(),
+        () => {},
+      );
     }
+    this.syncMusicTimer();
   }
   setMusic(enabled: boolean) {
     this.music = enabled;
     savePreference('sono-music', enabled);
     if (this.context && this.musicBus)
       this.musicBus.gain.setTargetAtTime(enabled ? 0.22 : 0, this.context.currentTime, 0.08);
+    this.syncMusicTimer();
   }
   setEffects(enabled: boolean) {
     this.effects = enabled;
@@ -75,7 +86,7 @@ export class GameAudio {
     bus?: AudioNode,
   ) {
     const c = this.context;
-    if (!c || (!bus && !this.effects)) return;
+    if (c?.state !== 'running' || !this.active || (!bus && !this.effects)) return;
     const t = when ?? c.currentTime;
     const oscillator = c.createOscillator();
     const gain = c.createGain();
@@ -91,6 +102,14 @@ export class GameAudio {
     };
     oscillator.start(t);
     oscillator.stop(t + duration + 0.02);
+  }
+  private syncMusicTimer() {
+    const playing = this.context?.state === 'running' && this.active && this.music;
+    if (playing && this.timer === undefined) this.timer = setInterval(() => this.schedule(), 100);
+    else if (!playing) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+    }
   }
   private schedule() {
     const c = this.context;
@@ -121,12 +140,15 @@ export class GameAudio {
   }
   crash() {
     const c = this.context;
-    if (!c || !this.effects) return;
-    const buffer = c.createBuffer(1, Math.floor(c.sampleRate * 0.65), c.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    if (c?.state !== 'running' || !this.active || !this.effects) return;
+    if (!this.crashBuffer) {
+      this.crashBuffer = c.createBuffer(1, Math.floor(c.sampleRate * 0.65), c.sampleRate);
+      const data = this.crashBuffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++)
+        data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    }
     const source = c.createBufferSource();
-    source.buffer = buffer;
+    source.buffer = this.crashBuffer;
     const filter = c.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(1600, c.currentTime);
@@ -145,6 +167,7 @@ export class GameAudio {
   }
   destroy() {
     clearInterval(this.timer);
+    this.timer = undefined;
     void this.context?.close();
   }
 }

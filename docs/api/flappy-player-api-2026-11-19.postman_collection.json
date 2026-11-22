@@ -1,0 +1,1815 @@
+{
+  "info": {
+    "name": "Flappy web: тоглогчийн API",
+    "description": "Flappy мини-апп (frontend)-ийн хийдэг бүх дуудлага, дарааллаараа. Core апп-гүйгээр, backend-ийн `mock` profile дээр ажиллана.\n\n**Хэрхэн ашиглах**\n1. Backend-ийг local дээр асаана (README: Run locally). Tournament явагдаж байх ёстой: 0.3 алхам шалгана.\n2. Энэ collection-ийг import хийнэ. `baseUrl` = `http://localhost:8080` бэлэн.\n3. **Run collection** дарна, эсвэл folder-уудыг дарааллаар нь ажиллуулна. 0-р folder заавал эхэлж ажиллана.\n\n**Тоглогч:** `devUser` хоосон бол ажиллуулах бүрд шинэ тоглогч үүснэ (өдрийн 3 үнэгүй тоглолттой, nickname-гүй). Нэг тоглогчоор үргэлжлүүлэх бол `devUser`-д утга өгнө, жишээ нь `bat`.\n\n**Нэвтрэлт:** bridge-ийн оронд mock launch token: `mock:<devUser>:<давтагдашгүй утга>`. Access token-ийг collection-ий Bearer auth автоматаар ашиглана.\n\n**Idempotency-Key:** тоглолт эхлүүлэх, захиалга үүсгэх бүрд шинэ UUID; зөвхөн ижил үйлдлийг дахин оролдоход хуучныг нь ашиглана (2.2, 3.4).\n\nCore талын дуудлагууд (оноо хасалтын callback, урамшуулал, HMAC): `flappy-core-integration.postman_collection.json`.\nДэлгэрэнгүй: README-ийн \"For the frontend\" хэсэг.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "0. Нэвтрэх",
+      "description": "Мини-апп нээгдэхэд хийх дуудлагууд.",
+      "item": [
+        {
+          "name": "0.1 Нэвтрэх (launch token → access token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/exchange",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "exchange"
+              ]
+            },
+            "description": "Жинхэнэ апп-д launch token-ыг `bridge.getLaunchToken()`-оос авна. Энд mock token ашиглана.\n\nХариу: `accessToken` (15 минут), `refreshToken` (30 хоног). `refreshAvailable: false` бол refresh token олгогдоогүй; access token дуусахад шинэ launch token-оор дахин нэвтэрнэ.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"launchToken\": \"mock:{{devUser}}:{{launchNonce}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('devUser')) {",
+                  "    pm.collectionVariables.set('devUser', 'web_' + Date.now().toString(36));",
+                  "}",
+                  "// Launch token нэг л удаа ашиглагдана.",
+                  "pm.collectionVariables.set('launchNonce', Date.now().toString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200: нэвтэрлээ', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', json.refreshToken || '');",
+                  "pm.test('access token, 15 минут', () => {",
+                  "    pm.expect(json.accessToken).to.be.a('string');",
+                  "    pm.expect(json.expiresIn).to.eql(900);",
+                  "});",
+                  "console.log('Тоглогч: ' + pm.collectionVariables.get('devUser'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.2 Token сэргээх (refresh)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Access token дуусахад (401) нэг удаа дуудаж, хүсэлтээ давтана. Refresh token бүр нэг л удаа ажиллана; хариунд шинэ хос ирнэ.\n\n`401 INVALID_REFRESH_TOKEN` эсвэл `503 REFRESH_UNAVAILABLE` бол bridge-ээс шинэ launch token авч 0.1-ийг давтана.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('шинэ хос ирсэн', () => pm.expect(json.refreshToken).to.not.eql(pm.collectionVariables.get('refreshToken')));",
+                  "pm.collectionVariables.set('accessToken', json.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', json.refreshToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "0.3 Tournament явагдаж байгаа эсэх",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/tournament",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "tournament"
+              ]
+            },
+            "description": "`current` нь `null` бол тоглоом хаалттай: `next.startsAt`-аар тоолох цаг харуулна.\n\nLocal дээр tournament байхгүй бол README-ийн curl-ийн 3-р алхмаар (эсвэл core collection-ий 1.4-өөр) үүсгэнэ."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('tournament явагдаж байна (үгүй бол README-ийн дагуу үүсгэнэ)', () => pm.expect(json.current).to.be.an('object'));",
+                  "if (json.current) { pm.collectionVariables.set('tournamentId', json.current.id); }"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Профайл ба nickname",
+      "description": "Анхны тоглолтоос өмнө nickname заавал сонгоно.",
+      "item": [
+        {
+          "name": "1.1 Миний мэдээлэл",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "`nickname` null бол nickname сонгох дэлгэц харуулна. `freePlaysLeft` (өнөөдрийн үнэгүй тоглолт) + `lives` = `playsLeft`. `tournamentRank`, `totalScore` нь tournament-д тоглолт дуусгаагүй бол null."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('талбарууд байна', () => pm.expect(json).to.include.keys('nickname', 'freePlaysLeft', 'lives', 'playsLeft', 'bestScore', 'tournamentRank', 'totalScore'));",
+                  "pm.test('playsLeft = freePlaysLeft + lives', () => pm.expect(json.playsLeft).to.eql(json.freePlaysLeft + json.lives));",
+                  "pm.collectionVariables.set('nickname', json.nickname || '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Nickname-гүй тоглох оролдлого → 409 NICKNAME_REQUIRED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "start"
+              ]
+            },
+            "description": "Nickname-гүй тоглогч тоглолт эхлүүлэхэд ийм хариу ирнэ: nickname асууж, дараа нь дахин эхлүүлнэ. Юу ч зарцуулагдахгүй."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('nickname')) {",
+                  "    pm.test('(тоглогч nickname-тэй тул алгасав)', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "} else {",
+                  "    pm.test('409', () => pm.response.to.have.status(409));",
+                  "    pm.test('code = NICKNAME_REQUIRED', () => pm.expect(pm.response.json().code).to.eql('NICKNAME_REQUIRED'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Буруу nickname → 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/nickname",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "nickname"
+              ]
+            },
+            "description": "Дүрэм: 3–16 тэмдэгт; Монгол эсвэл Латин үсэг (нэг нэрэнд хольж болохгүй), тоо, `_`; дор хаяж нэг үсэг.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nickname\": \"ab\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('nickname')) {",
+                  "    pm.test('(nickname аль хэдийн сонгосон)', () => pm.expect(pm.response.code).to.be.oneOf([400, 409]));",
+                  "} else {",
+                  "    pm.test('400', () => pm.response.to.have.status(400));",
+                  "    pm.test('code = VALIDATION_FAILED', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_FAILED'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 Nickname сонгох",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/nickname",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "nickname"
+              ]
+            },
+            "description": "Давтагдашгүй (том жижиг үсэг ялгахгүй). Нэг л удаа сонгоно: өөр нэр илгээвэл `409 NICKNAME_ALREADY_SET`, ижил нэрийг дахин илгээвэл 200. Өөр хүн авсан бол `409 NICKNAME_TAKEN`: өөр нэр асууна.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nickname\": \"{{newNickname}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const current = pm.collectionVariables.get('nickname');",
+                  "pm.collectionVariables.set('newNickname', current || ('p' + Date.now().toString(36)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200: nickname хадгалагдлаа', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('nickname', pm.response.json().nickname);",
+                  "pm.test('хадгалсан нэр', () => pm.expect(pm.response.json().nickname).to.eql(pm.collectionVariables.get('newNickname')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 Өөр nickname руу солих оролдлого → 409 NICKNAME_ALREADY_SET",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/nickname",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "nickname"
+              ]
+            },
+            "description": "Nickname-ийг солих боломжгүй.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nickname\": \"other_{{launchNonce}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('launchNonce', Date.now().toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('code = NICKNAME_ALREADY_SET', () => pm.expect(pm.response.json().code).to.eql('NICKNAME_ALREADY_SET'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Тоглолт",
+      "description": "**Mini-app-д хэрэгтэй нь зөвхөн 2 дуудлага:**\n\n1. Тоглогч \"Тоглох\" товч дарах бүрд → `POST /api/v1/games/start` (**2.1**), товч дарах бүрд **шинэ** `Idempotency-Key` (UUID).\n2. Game over болоход → `POST /api/v1/games/{sessionId}/finish` (**2.3**) `{score, durationMs}`.\n\nДараагийн тоглолт бүр мөн 2.1 → 2.3. \"Эхний\" ба \"хоёр дахь\" тоглолтод ялгаатай endpoint байхгүй.\n\nҮлдсэн хүсэлтүүд (2.2, 2.4–2.8) нь зөвхөн туршилт: дахин илгээх, алдаа гарах тохиолдлыг харуулна. Үнэгүй тоглолт (өдөрт 3) эхэлж зарцуулагдаж, дууссаны дараа амь зарцуулагдана.",
+      "item": [
+        {
+          "name": "2.1 Тоглолт эхлүүлэх (\"Тоглох\" товч бүрд)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{startKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "start"
+              ]
+            },
+            "description": "Товч дарах бүрд **шинэ** `Idempotency-Key`. Хариу: `sessionId`, `seed` (түвшин үүсгэх), `paidWith` (`FREE` эсвэл `LIFE`), `freePlaysLeft`, `livesLeft`, `config`.\n\n`config.speed`: тоглоом 1.0 хурдаар эхэлж, өнгөрсөн саадын тоо `thresholds`-д хүрэх бүрд `step`-ээр нэмэгдэнэ (`max` хүртэл). Хурд `s` үед саад `pipeIntervalMs / s` тутамд ирнэ. Эдгээр тоог кодонд бүү бич, хариунаас уншина: сервер оноог яг энэ хуваариар шалгана.\n\n409: `NICKNAME_REQUIRED`, `TOURNAMENT_NOT_ACTIVE`, `INSUFFICIENT_LIVES` (амь худалдаж авах санал)."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('startKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201: тоглолт эхэллээ', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('хурдны хуваарь config-д ирсэн', () => {",
+                  "    pm.expect(json.config.pipeIntervalMs).to.be.a('number');",
+                  "    pm.expect(json.config.speed.thresholds).to.be.an('array').that.is.not.empty;",
+                  "});",
+                  "pm.test('paidWith FREE эсвэл LIFE', () => pm.expect(json.paidWith).to.be.oneOf(['FREE', 'LIFE']));",
+                  "pm.collectionVariables.set('sessionId', json.sessionId);",
+                  "pm.collectionVariables.set('startedAt', Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.2 Ижил Idempotency-Key-ээр дахин оролдох → 200, ижил тоглолт",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{startKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "start"
+              ]
+            },
+            "description": "Timeout эсвэл сүлжээний алдааны дараа **ижил** түлхүүрээр дахин илгээнэ. Шинэ тоглолт үүсэхгүй, амь дахин зарцуулагдахгүй; 200 ба анхны `sessionId`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200: давтан илгээлт', () => pm.response.to.have.status(200));",
+                  "pm.test('ижил sessionId', () => pm.expect(pm.response.json().sessionId).to.eql(pm.collectionVariables.get('sessionId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.3 Тоглолт дуусгах",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/{{sessionId}}/finish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "{{sessionId}}",
+                "finish"
+              ]
+            },
+            "description": "`durationMs`: start-ийн хариу ирснээс game over хүртэлх бодит хугацаа (мс), зогсолтгүй. Сервер өөрийн цагтай харьцуулна (±5 сек).\n\nХариу HTTP 200: `status` = `FINISHED` (оноо tournament-ийн нийлбэрт нэмэгдэнэ) эсвэл `REJECTED` (`rejectReason`: `SCORE_TOO_HIGH`, `DURATION_MISMATCH`). Тоглолтыг 15 минутын дотор дуусгана.\n\nGame over дэлгэц: `score` (энэ тоглолт), `totalScore` (tournament-ийн нийт оноо, \"НИЙТ\" мөр), `newlyUnlocked` (шинээр нээгдсэн шувууд: код бүрд \"шинэ шувуу\" alert, нэрийг `GET /birds`-ээс).\n\nЭнд 3 оноо илгээнэ: хуваарийн дагуу 3 оноог тэр дороо зөвшөөрдөг.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 3,\n  \"durationMs\": {{durationMs}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('durationMs', Date.now() - Number(pm.collectionVariables.get('startedAt')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('FINISHED', () => pm.expect(json.status).to.eql('FINISHED'));",
+                  "pm.test('оноо 3', () => pm.expect(json.score).to.eql(3));",
+                  "pm.test('totalScore (НИЙТ мөр)', () => pm.expect(pm.response.json().totalScore).to.be.at.least(pm.response.json().score));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.4 Ижил үр дүнг дахин илгээх → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/{{sessionId}}/finish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "{{sessionId}}",
+                "finish"
+              ]
+            },
+            "description": "Хариу ирээгүй үед ижил оноогоор дахин илгээхэд аюулгүй: хадгалагдсан үр дүн буцна.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 3,\n  \"durationMs\": {{durationMs}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('FINISHED хэвээр', () => pm.expect(pm.response.json().status).to.eql('FINISHED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.5 Өөр оноогоор дахин илгээх → 409 SESSION_ALREADY_FINISHED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/{{sessionId}}/finish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "{{sessionId}}",
+                "finish"
+              ]
+            },
+            "description": "Дууссан тоглолтын оноог өөрчлөх боломжгүй.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 50,\n  \"durationMs\": {{durationMs}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('409', () => pm.response.to.have.status(409));",
+                  "pm.test('code = SESSION_ALREADY_FINISHED', () => pm.expect(pm.response.json().code).to.eql('SESSION_ALREADY_FINISHED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.6 (Туршилт) Дахин тоглолт эхлүүлэх: 2.1-тэй ижил endpoint",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "start"
+              ]
+            },
+            "description": "2.1-тэй **яг ижил** endpoint (`POST /games/start`), шинэ `Idempotency-Key`-тэй. Mini-app-д тусдаа дуудлага биш: тоглогч дахин \"Тоглох\" дарахад 2.1-ийг л дахин дуудна.\n\nЭнд 2.7-д (хэт өндөр оноо) шинэ тоглолт хэрэгтэй тул эхлүүлж байна."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('хурдны хуваарь config-д ирсэн', () => {",
+                  "    pm.expect(json.config.pipeIntervalMs).to.be.a('number');",
+                  "    pm.expect(json.config.speed.thresholds).to.be.an('array').that.is.not.empty;",
+                  "});",
+                  "pm.collectionVariables.set('sessionId', json.sessionId);",
+                  "pm.collectionVariables.set('startedAt', Date.now());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.7 Хэт өндөр оноо → REJECTED / SCORE_TOO_HIGH",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/{{sessionId}}/finish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "{{sessionId}}",
+                "finish"
+              ]
+            },
+            "description": "Хугацаандаа багтах боломжгүй оноо (энд 500 оноо ~1 секундэд) татгалзагдана. HTTP нь 200, `status` = `REJECTED`; оноо тооцогдохгүй.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 500,\n  \"durationMs\": {{durationMs}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('durationMs', Date.now() - Number(pm.collectionVariables.get('startedAt')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('REJECTED / SCORE_TOO_HIGH', () => {",
+                  "    pm.expect(json.status).to.eql('REJECTED');",
+                  "    pm.expect(json.rejectReason).to.eql('SCORE_TOO_HIGH');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.8 Idempotency-Key-гүй эхлүүлэх → 400",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "start"
+              ]
+            },
+            "description": "`Idempotency-Key` заавал."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('code = IDEMPOTENCY_KEY_REQUIRED', () => pm.expect(pm.response.json().code).to.eql('IDEMPOTENCY_KEY_REQUIRED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Амь",
+      "description": "Үнэгүй тоглолт дууссаны дараа амь зарцуулагдана. Амь tournament дуусахад устна.",
+      "item": [
+        {
+          "name": "3.1 Туршилтын амь авах (зөвхөн mock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/dev/lives",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "dev",
+                "lives"
+              ]
+            },
+            "description": "Худалдан авалтгүйгээр амь нэмнэ (1–100). Зөвхөн `mock` profile-д байдаг; production-д байхгүй.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lives\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('амь 5-аас их буюу тэнцүү', () => pm.expect(pm.response.json().lives).to.be.at.least(5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 Нэг амийн үнэ",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lives/price",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lives",
+                "price"
+              ]
+            },
+            "description": "Худалдан авах дэлгэцэд `quantity × pointsPerLife` оноог харуулна. `maxLivesPerOrder`: нэг захиалгын дээд хэмжээ."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('pointsPerLife', json.pointsPerLife);",
+                  "pm.test('үнэ ба дээд хэмжээ', () => { pm.expect(json.pointsPerLife).to.be.above(0); pm.expect(json.maxLivesPerOrder).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.3 Захиалга үүсгэх (3 амь)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{orderKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lives/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lives",
+                "orders"
+              ]
+            },
+            "description": "Үнийг сервер DB-ээс тавина. Дараа нь bridge-ийг **зөвхөн `orderId`-тай** дуудна: `payWithPoints({orderId})`, тэгээд `GET /lives/orders/{orderId}`-г `PENDING` биш болтол асууна. Амь зөвхөн core-ын callback-аар нэмэгдэнэ.\n\nLocal дээр төлбөрийг дуусгах бол core collection-ий callback-ийг ашиглана.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('orderKey', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('orderId', json.orderId);",
+                  "pm.test('PENDING, үнэ = 3 × pointsPerLife', () => {",
+                  "    pm.expect(json.status).to.eql('PENDING');",
+                  "    pm.expect(json.lives).to.eql(3);",
+                  "    pm.expect(json.pointsCost).to.eql(3 * Number(pm.collectionVariables.get('pointsPerLife')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 Ижил түлхүүрээр дахин илгээх → 200, ижил захиалга",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{orderKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lives/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lives",
+                "orders"
+              ]
+            },
+            "description": "Дахин оролдоход шинэ захиалга үүсэхгүй.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('ижил orderId', () => pm.expect(pm.response.json().orderId).to.eql(pm.collectionVariables.get('orderId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.5 Захиалгын төлөв",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lives/orders/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lives",
+                "orders",
+                "{{orderId}}"
+              ]
+            },
+            "description": "`PENDING` → `PAID` (амь нэмэгдсэн), `FAILED` эсвэл `EXPIRED` (30 минутын дараа)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('PENDING', () => pm.expect(pm.response.json().status).to.eql('PENDING'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.6 Тоо 0 → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lives/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lives",
+                "orders"
+              ]
+            },
+            "description": "`quantity` нь 1-ээс `maxLivesPerOrder` хүртэл.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('code = VALIDATION_FAILED', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_FAILED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.7 Амь авсан түүх (амь дэлгэц)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/lives/history?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "lives",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Амь дэлгэцийн хоёр жагсаалт.\n\n`entries` (Амь авсан жагсаалт): tournament доторх амь нэмэгдсэн, хасагдсан бүх өөрчлөлт, шинэ нь эхэндээ. Огноо = `createdAt`, төрөл = `title`, тоо = `lives` (+10, -1). `type` нь тогтвортой код. Үнэгүй амиар тоглосон тоглолт энд орохгүй. Дараагийн хуудас: `cursor={{nextCursor}}`; `nextCursor` null бол сүүлийн хуудас.\n\n`freePlays` (Өдрийн үнэгүй амь): tournament-ийн өнөөдөр хүртэлх өдөр бүр, `{day, title, lives: 3}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('хоёр жагсаалт', () => { pm.expect(json.entries).to.be.an('array'); pm.expect(json.freePlays).to.be.an('array'); });",
+                  "pm.test('мөр бүр type, title, lives, createdAt-тэй', () => json.entries.forEach(e => pm.expect(e).to.include.keys('type', 'title', 'lives', 'createdAt')));",
+                  "pm.collectionVariables.set('nextCursor', json.nextCursor);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Leaderboard",
+      "description": "Гурван таб:\n- **НИЙТ**: tournament-ийн самбар, тоглогчийн бүх онооны нийлбэрээр (4.1).\n- **ӨДӨР**: өнөөдрийн самбар, зөвхөн өнөөдрийн оноогоор (4.4).\n- **ӨМНӨХ**: өдөр сонгох жагсаалт (4.5), сонгосон өдрийн самбар (4.6).\n\nОноо тэнцвэл тэр оноонд түрүүлж хүрсэн нь дээр; `reachedAt` нь \"ЦАГ\" багана. Тоглолт **дууссан** өдөртөө тооцогдоно: 23:59-д эхэлж 00:10-д дууссан бол дараагийн өдөрт орно. Зөвхөн tournament-ийн **сүүлийн өдөр** дуусах үед (дараагийн өдөр байхгүй) тэр тоглолт сүүлийн өдөрт тооцогдоно. Өдрийн ялагч (`winner`) дараагийн өдрийн 00:01-д (сүүлийн өдөр: tournament дууссанаас 16 минутын дараа) тодорч, дахин өөрчлөгдөхгүй.",
+      "item": [
+        {
+          "name": "4.1 Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leaderboard?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leaderboard"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "`entries`: эхний `limit` (анхдагч 10, дээд тал нь 100). `me`: тоглогчийн өөрийн мөр, `limit`-ээс үл хамаарна; эхний 10-д ороогүй бол 11-р мөр болгож харуулна. `reachedAt`: тоглогч тэр оноондоо хүрсэн цаг (ЦАГ багана); оноо тэнцвэл эрт хүрсэн нь дээр. Tournament хооронд сүүлийнхийн эцсийн байр `tournament.running = false`-тай ирнэ. Минут тутам шинэчилнэ."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('entries ба tournament', () => { pm.expect(json.entries).to.be.an('array'); pm.expect(json.tournament).to.be.an('object'); });",
+                  "pm.test('me: миний nickname, нийт оноо ≥ 3', () => {",
+                  "    pm.expect(json.me.nickname).to.eql(pm.collectionVariables.get('nickname'));",
+                  "    pm.expect(json.me.totalScore).to.be.at.least(3);",
+                  "});",
+                  "pm.test('reachedAt (ЦАГ багана)', () => pm.expect(json.me.reachedAt).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.2 Профайл дахь байр",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "`tournamentRank`, `totalScore` одоо бөглөгдсөн байна. `todayRank`, `todayScore`: өнөөдрийн самбар дээрх байр, оноо (өнөөдөр тоглоогүй бол null)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('tournamentRank ба totalScore', () => { pm.expect(json.tournamentRank).to.be.at.least(1); pm.expect(json.totalScore).to.be.at.least(3); });",
+                  "pm.test('todayRank ба todayScore', () => { pm.expect(json.todayRank).to.be.at.least(1); pm.expect(json.todayScore).to.be.at.least(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.3 limit = 101 → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leaderboard?limit=101",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leaderboard"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "101"
+                }
+              ]
+            },
+            "description": "`limit` 1–100."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('code = VALIDATION_FAILED', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_FAILED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.4 Өнөөдрийн самбар (ӨДӨР таб)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leaderboard/daily?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leaderboard",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Зөвхөн өнөөдрийн (Улаанбаатарын цагаар) тоглолтуудын оноогоор. `day`-гүй бол өнөөдөр; tournament дууссан бол түүний сүүлийн өдөр. Дээд картанд `entries[0]` (одоогийн тэргүүлэгч), доор 2–10, \"Таны байр\"-т `me`. `winner` өнөөдөр null (өдөр дуусаагүй)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('day, entries', () => { pm.expect(json.day).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); pm.expect(json.entries).to.be.an('array'); });",
+                  "pm.test('өнөөдрийн ялагч хараахан тодроогүй', () => pm.expect(json.winner).to.eql(null));",
+                  "pm.test('me: миний nickname, өнөөдрийн оноо ≥ 3', () => { pm.expect(json.me.nickname).to.eql(pm.collectionVariables.get('nickname')); pm.expect(json.me.totalScore).to.be.at.least(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.5 Өдрүүдийн жагсаалт (ӨМНӨХ таб)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leaderboard/days",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leaderboard",
+                "days"
+              ]
+            },
+            "description": "Tournament-ийн өдрүүд өнөөдрөөс эхний өдөр хүртэл (шинэ нь эхэндээ), өдөр бүрийн ялагчтай (`winner`: өнөөдөр, тодроогүй, эсвэл хэн ч тоглоогүй өдөр null). Өдөр сонгоход 4.6-г дуудна. Энд хамгийн сүүлийн өдрийг `historyDay`-д хадгална."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('days: дор хаяж өнөөдөр', () => { pm.expect(json.days).to.be.an('array').that.is.not.empty; pm.expect(json.days[0]).to.have.property('winner'); });",
+                  "pm.collectionVariables.set('historyDay', json.days[json.days.length - 1].day);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.6 Сонгосон өдрийн самбар",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leaderboard/daily?day={{historyDay}}&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leaderboard",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "day",
+                  "value": "{{historyDay}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "`day=YYYY-MM-DD`: tournament-ийн өнөөдрийг хүртэлх аль ч өдөр. Тодорсон бол `winner`-т ялагч (ялагчийн карт), `entries`-д тухайн өдрийн эхний 10."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('сонгосон өдөр', () => pm.expect(json.day).to.eql(pm.collectionVariables.get('historyDay')));",
+                  "pm.test('winner талбар', () => pm.expect(json).to.have.property('winner'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.7 Tournament-ээс гадуурх өдөр → 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/leaderboard/daily?day=2000-01-01",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "leaderboard",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "day",
+                  "value": "2000-01-01"
+                }
+              ]
+            },
+            "description": "Tournament-ийн өдөр биш, эсвэл ирээдүйн өдөр бол татгалзана."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('code = VALIDATION_FAILED', () => pm.expect(pm.response.json().code).to.eql('VALIDATION_FAILED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Алдаанууд",
+      "description": "Мини-апп эдгээрийг хэрхэн харьцахыг шалгах.",
+      "item": [
+        {
+          "name": "5.1 Token-гүй хүсэлт → 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me"
+              ]
+            },
+            "description": "401 ирвэл refresh (0.2) хийж, хүсэлтээ нэг удаа давтана.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('code = UNAUTHORIZED', () => pm.expect(pm.response.json().code).to.eql('UNAUTHORIZED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.2 Буруу launch token → 401 INVALID_LAUNCH_TOKEN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/exchange",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "exchange"
+              ]
+            },
+            "description": "Bridge-ээс шинэ token авч дахин оролдоно.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"launchToken\": \"not-a-valid-token\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401', () => pm.response.to.have.status(401));",
+                  "pm.test('code = INVALID_LAUNCH_TOKEN', () => pm.expect(pm.response.json().code).to.eql('INVALID_LAUNCH_TOKEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.3 Байхгүй тоглолт дуусгах → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/games/019a0000-0000-7000-8000-000000000000/finish",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "games",
+                "019a0000-0000-7000-8000-000000000000",
+                "finish"
+              ]
+            },
+            "description": "Өөр тоглогчийн тоглолт ч мөн 404 болно.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 1,\n  \"durationMs\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('code = SESSION_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('SESSION_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Шувуу (дэлгүүрийн дэлгэц)",
+      "description": "Шувуу тухайн tournament-ийн нийт оноогоор нээгдэнэ; шинэ tournament-д дахин түгжигдэнэ. Зургийг мини-апп `code`-оор нь харуулна.\n\nДэлгүүрийн доорх Sono point-ийн үлдэгдлийг core апп-аас bridge-ээр (`getPointBalance`) авна; энэ backend-д байхгүй.",
+      "item": [
+        {
+          "name": "6.1 Бүх шувуу",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/birds",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "birds"
+              ]
+            },
+            "description": "Шувуу бүрд `unlockScore`, `unlocked`, `selected`; мөн тоглогчийн tournament-ийн `totalScore`. Түгжээтэй шувуунд \"`unlockScore` оноонд нээгдэнэ\" гэж харуулна."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('шувуудын жагсаалт', () => pm.expect(json.birds).to.be.an('array').that.is.not.empty);",
+                  "pm.test('нэг шувуу сонгогдсон', () => pm.expect(json.birds.filter(b => b.selected)).to.have.length(1));",
+                  "const locked = json.birds.find(b => !b.unlocked);",
+                  "const open = json.birds.find(b => b.unlocked);",
+                  "pm.collectionVariables.set('lockedBird', locked ? locked.code : '');",
+                  "pm.collectionVariables.set('unlockedBird', open.code);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.2 Түгжээтэй шувуу сонгох → 409 BIRD_LOCKED",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/bird",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "bird"
+              ]
+            },
+            "description": "Хангалттай оноо цуглуулаагүй бол сонгох боломжгүй.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{birdToTry}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('birdToTry', pm.collectionVariables.get('lockedBird') || pm.collectionVariables.get('unlockedBird'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.collectionVariables.get('lockedBird')) {",
+                  "    pm.test('409', () => pm.response.to.have.status(409));",
+                  "    pm.test('code = BIRD_LOCKED', () => pm.expect(pm.response.json().code).to.eql('BIRD_LOCKED'));",
+                  "} else {",
+                  "    pm.test('(бүх шувуу нээгдсэн тул алгасав)', () => pm.expect(pm.response.code).to.eql(200));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.3 Нээгдсэн шувуу сонгох (ON)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/bird",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "bird"
+              ]
+            },
+            "description": "\"ON\" товч. Хариу: `selected`. Дараа нь `GET /me`-ийн `selectedBird` энэ болно.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{unlockedBird}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200', () => pm.response.to.have.status(200));",
+                  "pm.test('сонгогдлоо', () => pm.expect(pm.response.json().selected).to.eql(pm.collectionVariables.get('unlockedBird')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.4 Байхгүй шувуу → 404 BIRD_NOT_FOUND",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/me/bird",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "me",
+                "bird"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"no_such_bird\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('code = BIRD_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('BIRD_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "devUser",
+      "value": ""
+    },
+    {
+      "key": "launchNonce",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "nickname",
+      "value": ""
+    },
+    {
+      "key": "newNickname",
+      "value": ""
+    },
+    {
+      "key": "tournamentId",
+      "value": ""
+    },
+    {
+      "key": "startKey",
+      "value": ""
+    },
+    {
+      "key": "sessionId",
+      "value": ""
+    },
+    {
+      "key": "startedAt",
+      "value": ""
+    },
+    {
+      "key": "durationMs",
+      "value": ""
+    },
+    {
+      "key": "pointsPerLife",
+      "value": ""
+    },
+    {
+      "key": "orderKey",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "lockedBird",
+      "value": ""
+    },
+    {
+      "key": "unlockedBird",
+      "value": ""
+    },
+    {
+      "key": "birdToTry",
+      "value": ""
+    },
+    {
+      "key": "historyDay",
+      "value": ""
+    }
+  ]
+}

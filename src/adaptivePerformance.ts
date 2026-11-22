@@ -6,105 +6,99 @@ export type RenderProfile = {
   smokeCount: number;
 };
 
-export const RENDER_PROFILES: Record<PerformanceTier, RenderProfile> = {
-  high: { tier: 'high', maxDpr: 1.5, smokeCount: 7 },
-  balanced: { tier: 'balanced', maxDpr: 1.25, smokeCount: 5 },
-  economy: { tier: 'economy', maxDpr: 1, smokeCount: 3 },
-  low: { tier: 'low', maxDpr: 1, smokeCount: 1 },
-};
+const PROFILES: readonly RenderProfile[] = [
+  { tier: 'low', maxDpr: 0.85, smokeCount: 1 },
+  { tier: 'economy', maxDpr: 1, smokeCount: 3 },
+  { tier: 'balanced', maxDpr: 1.25, smokeCount: 5 },
+  { tier: 'high', maxDpr: 1.5, smokeCount: 7 },
+];
 
-const WINDOW_MS = 2_500;
-const MIN_SAMPLES = 30;
-const SAMPLE_CAPACITY = 180;
+const WINDOW_MS = 1_500;
+const MIN_SAMPLES = 20;
+const SAMPLE_CAPACITY = 480;
+const FRAME_BUDGET_MS = 1000 / 60;
 
-/**
- * Adjusts render quality from real frame intervals. It never changes gameplay
- * physics, collision sizes, server tuning, or score. Fixed-size buffers avoid
- * allocating arrays in the render callback.
- */
+type DeviceCapabilities = { deviceMemory?: number; hardwareConcurrency?: number };
+
+/** Adjusts rendering cost from frame intervals without coupling it to the game simulation. */
 export class AdaptivePerformance {
   private intervals = new Float32Array(SAMPLE_CAPACITY);
   private sorted = new Float32Array(SAMPLE_CAPACITY);
   private count = 0;
-  private lastFrame = 0;
-  private windowStarted = 0;
+  private previousFrame?: number;
+  private activeTime = 0;
   private badWindows = 0;
   private goodWindows = 0;
-  private tier: PerformanceTier = 'balanced';
+  private profileIndex: number;
 
-  constructor(private readonly onTierChange: (profile: RenderProfile) => void) {}
-
-  get profile() {
-    return RENDER_PROFILES[this.tier];
+  constructor(
+    private readonly onTierChange: (profile: RenderProfile) => void,
+    { deviceMemory, hardwareConcurrency }: DeviceCapabilities = {},
+  ) {
+    const limitedMemory = deviceMemory !== undefined && deviceMemory <= 2;
+    const limitedThreads = hardwareConcurrency !== undefined && hardwareConcurrency <= 2;
+    this.profileIndex = limitedMemory || limitedThreads ? 1 : 2;
   }
 
-  resetWindow() {
-    this.count = 0;
-    this.lastFrame = 0;
-    this.windowStarted = 0;
-    this.badWindows = 0;
-    this.goodWindows = 0;
+  get profile() {
+    return PROFILES[this.profileIndex];
+  }
+
+  pause() {
+    this.previousFrame = undefined;
   }
 
   sample(now: number) {
-    if (this.lastFrame > 0) {
-      if (this.count < SAMPLE_CAPACITY) this.intervals[this.count++] = now - this.lastFrame;
-      if (this.windowStarted === 0) this.windowStarted = now;
-      if (now - this.windowStarted >= WINDOW_MS && this.count >= MIN_SAMPLES) {
-        this.evaluateWindow();
-        this.count = 0;
-        this.windowStarted = now;
-      }
+    const previous = this.previousFrame;
+    this.previousFrame = now;
+    if (previous === undefined || now <= previous) return;
+
+    const interval = now - previous;
+    this.intervals[this.count++] = interval;
+    this.activeTime += interval;
+    if (
+      (this.activeTime >= WINDOW_MS && this.count >= MIN_SAMPLES) ||
+      this.count === SAMPLE_CAPACITY
+    ) {
+      this.evaluateWindow();
+      this.count = 0;
+      this.activeTime = 0;
     }
-    this.lastFrame = now;
   }
 
   private evaluateWindow() {
-    const budget = 1000 / 60;
-    this.sorted.set(this.intervals.subarray(0, this.count), 0);
-    this.sorted.subarray(0, this.count).sort();
-    const p95 = this.sorted[Math.min(this.count - 1, Math.floor(this.count * 0.95))];
+    const intervals = this.intervals.subarray(0, this.count);
+    const sorted = this.sorted.subarray(0, this.count);
+    sorted.set(intervals);
+    sorted.sort();
+    const p50 = sorted[Math.ceil(this.count * 0.5) - 1];
+    const p95 = sorted[Math.ceil(this.count * 0.95) - 1];
     let missed = 0;
-    for (let index = 0; index < this.count; index++) {
-      if (this.intervals[index] > budget * 1.15) missed++;
+    for (const interval of intervals) {
+      if (interval > FRAME_BUDGET_MS * 1.15) missed++;
     }
+
     const missedRatio = missed / this.count;
-    const bad =
-      this.tier === 'high' || this.tier === 'balanced'
-        ? p95 > 17.8 || missedRatio > 0.08
-        : p95 > 18.2 || missedRatio > 0.1;
+    const bad = p95 > 18.2 || missedRatio > 0.08;
+    const good = p95 <= 17.5 && missedRatio < 0.02;
     this.badWindows = bad ? this.badWindows + 1 : 0;
+    this.goodWindows = good ? this.goodWindows + 1 : 0;
 
-    if (this.tier === 'high' && this.badWindows >= 2) {
-      this.changeTier('balanced');
-      return;
-    }
-    if (this.tier === 'balanced' && this.badWindows >= 2) {
-      this.changeTier('economy');
-      return;
-    }
-    if (this.tier === 'economy' && this.badWindows >= 2) {
-      this.changeTier('low');
-      return;
-    }
-
-    // Recover visual sharpness only after a long stable period. Staying at
-    // 30 FPS requires a new launch before moving up, avoiding mode oscillation.
-    if ((this.tier === 'balanced' || this.tier === 'economy') && p95 < 16.7 && missedRatio < 0.02) {
-      this.goodWindows++;
-      if (this.goodWindows >= 6) this.changeTier(this.tier === 'balanced' ? 'high' : 'balanced');
-    } else {
-      this.goodWindows = 0;
+    // A sustained cadence below ~45 Hz warrants an immediate step down.
+    if (this.profileIndex > 0 && (p50 > 22 || this.badWindows >= 2)) {
+      this.changeProfile(this.profileIndex - 1);
+    } else if (
+      this.profileIndex < PROFILES.length - 1 &&
+      this.goodWindows >= (this.profileIndex === 0 ? 12 : 8)
+    ) {
+      this.changeProfile(this.profileIndex + 1);
     }
   }
 
-  private changeTier(tier: PerformanceTier) {
-    if (tier === this.tier) return;
-    this.tier = tier;
+  private changeProfile(index: number) {
+    this.profileIndex = index;
     this.badWindows = 0;
     this.goodWindows = 0;
-    this.count = 0;
-    this.windowStarted = 0;
     this.onTierChange(this.profile);
   }
 }

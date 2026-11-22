@@ -16,7 +16,6 @@
         <div id="offline-notice" role="alert" hidden>
           Холболт тасарлаа. Сүлжээгээ шалгаад дахин оролдоно уу.
         </div>
-        <button id="demo-open" class="demo-badge">ТУРШИЛТ</button>
         <button id="scene-back" class="back-button" aria-label="Нүүр рүү буцах" hidden>‹</button>
         <section id="home" class="screen" aria-label="Үндсэн цэс" hidden>
           <button
@@ -37,6 +36,10 @@
             <button id="play" class="game-button green">ТОГЛОХ</button>
             <button id="rules-open" class="game-button purple">ДҮРЭМ</button>
             <button id="stats-open" class="game-button purple">ЯЛАГЧИД</button>
+            <button id="dev-lives" class="small-button dev-lives" hidden>+10 ТЕСТ АМЬ</button>
+            <p id="guest-note" class="guest-note" hidden>
+              ЗОЧНЫ ТОГЛОЛТ · ОНОО СЕРВЕРТ БҮРТГЭГДЭХГҮЙ
+            </p>
           </div>
           <div class="menu-footer">
             <button id="gifts-open" class="icon-button" aria-label="Шагналууд">
@@ -79,7 +82,7 @@
           >
         </div>
         <section id="game-over" class="screen" aria-label="Тоглолтын дүн" hidden>
-          <div class="over-content">
+          <div class="over-content" tabindex="0">
             <h1>ЭЭ УНАЧИХЛАА</h1>
             <div class="over-score">ОНОО<strong id="result-score">0</strong></div>
             <div class="result-heart">
@@ -96,12 +99,6 @@
           </div>
         </section>
         <section
-          id="host-preview"
-          class="host-preview"
-          aria-label="SONO app жишээ"
-          hidden
-        ></section>
-        <section
           id="info-overlay"
           class="info-overlay"
           role="dialog"
@@ -112,12 +109,17 @@
           <div class="info-card">
             <h2 id="info-title"></h2>
             <button id="info-close" class="info-close" aria-label="Хаах">×</button>
-            <div id="panel-content"></div>
+            <div id="panel-content" tabindex="0" role="region" aria-label="Мэдээлэл"></div>
           </div>
         </section>
         <div id="toast" role="status" hidden></div>
-        <nav id="preview-tools" class="preview-tools" aria-label="Дэлгэцийн preview" hidden></nav>
       </main>
+      <div id="mock-banner" hidden>
+        <span>ТУРШИЛТЫН ГОРИМ · БОДИТ ОНОО, ТӨЛБӨР БИШ</span>
+        <button id="mock-score" type="button">+50 ОНОО</button>
+        <button id="mock-buy" type="button">АМЬ АВАХ</button>
+        <button id="mock-reset" type="button">ЭХНЭЭС НЬ</button>
+      </div>
     </div>
     <script type="module" src="/src/entry.ts"></script>
   </body>

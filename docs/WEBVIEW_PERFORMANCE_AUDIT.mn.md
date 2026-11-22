@@ -1,5 +1,17 @@
 # WebView тоглоомын гүйцэтгэлийн аудит — 2026-11-18
 
+2026-11-19 artwork update: Supplied day, evening and night gameplay art now renders with matching pipe caps/shafts. The new 128px birds and 160px store thumbnails are in use. Evening art is used 17:00–18:00 Asia/Ulaanbaatar, inside the existing day period; night begins at 18:00. The larger supplied menu export was omitted because the current menu art depicts the same scene at a smaller transfer size. The other supplied bird sprites have one pose each.
+
+2026-11-19 Gold SONO update: The supplied 128×118 wingless body and three aligned wing poses now render as one Gold bird in Ready and gameplay. The Gold store thumbnail uses the matching composited art. Other birds still use their supplied single-image sprites.
+
+## Production build-ийн дараагийн шалгалт
+
+Canvas2D-ийн гүйлгэх арын зургийг хоёр TileSprite-аас нийт дөрвөн crop image болгон өөрчилсөн. Дүрслэлийн байрлалыг тогтмол 60 Гц-ийн физикийн алхам хооронд интерполяцлана. Adaptive чанар дөрвөн шаттай (0.85, 1, 1.25, 1.5), backing store ойролцоогоор 900,000 пикселийн дээд хязгаартай. Хоолойн WebP нь PNG эхтэй пиксел бүрээр ижил. Гар утасны нүүр жижиг WebP ашиглана. Фонт WOFF2 болсон.
+
+390×844, DPR 3, 4× CPU throttle-тай Chromium A/B шалгалтаар 510 frame-д том дундын canvas цэвэрлэх дуудлага 998-аас 2 болсон. Хоёр замын frame interval p95 16.7 мс. Chromium, WebKit дээр 10 хэмжээс бүрээр үндсэн урсгалыг шалгасан. iOS WKWebView симулятор, Android System WebView эмуляторын smoke тест локал API fixture-тэй давсан. Бодит SONO Flutter WebView, staging Player API болон бодит утасны гүйцэтгэлийн шалгалт үлдсэн.
+
+## Өмнөх хэмжилт ба өөрчлөлтийн түүх
+
 Энэ аудит нь одоогийн код ба desktop browser-ийн хэмжилт. iPhone 13 Pro-ийн Safari/Flutter WebView дээрх бодит frame trace одоогоор аваагүй.
 
 | Шалгалт | Одоогийн хэрэгжүүлэлт |
@@ -9,11 +21,11 @@
 | Хэмжээ ба DPR | Дэлгэцийн хэмжээний дагуу `layoutFor()` нэгж ба safe area тооцдог. 360×640 гэсэн хатуу виртуал canvas ашигладаггүй. CSS/world geometry viewport пикселээр үлдэнэ. Adaptive профайл DPR 1.25-аас эхэлж, хэмжилтээр 1.5 хүртэл өсөх эсвэл сул төхөөрөмжид 1.0 болгоно. Phaser Scale.NONE, reciprocal scale zoom, top-left camera zoom хэвээр. |
 | Санах ой | Хоолойн объектууд pool-д буцна. `speedFactor()` frame бүр массив үүсгэхээ больсон; Ready далавчны pose ба хөгжмийн нот массивууд тогтмол. Pilot, хоолой, үндсэн өдөр background эхэлж ачаална; сонгосон Gold/Santa болон бусад background-ийг зөвхөн сонгосон үед татна. Production asset path нь hash-тай, gallery thumbnail lazy load. Sprite atlas одоогоор алга. |
 | Хүрэлт | Тоглолтын canvas `pointerdown`, `touch-action: none`; DOM цэсний товчлуурууд `click` хэрэглэнэ. API `start` ба `finish` нь run-ийн зааг дээр. Strict-online дүрмээр API mode тоглож байх үед 30 секунд тутам `GET /api/v1/me` connectivity probe хийдэг; энэ нь `тоглох үед API огт дуудахгүй` зөвлөмжөөс зориуд ялгаатай бөгөөд render/update loop-ийг await хийдэггүй. Audio sequencer-ийн 100 ms timer, UI panel refresh timer, network timeout нь game loop биш. |
-| Хэмжилт | `?mode=mock&perf=1` дээр FPS, p95 frame, >33/>50 ms, raw/game clock, texture rebuild болон canvas renderer харагдана. Үүнийг production bundle-д оруулахгүй. Рендер Canvas2D бөгөөд adaptive monitor зөвхөн тоглох үед frame interval хэмжинэ. Өмнөх desktop/WebGL хэмжилт одоогийн renderer-ийг төлөөлөхгүй; бодит утасны хэмжилт шаардлагатай. |
+| Хэмжилт | `?perf=1` дээр FPS, p95 frame, >33/>50 ms, raw/game clock, texture rebuild болон canvas renderer харагдана. Үүнийг production bundle-д оруулахгүй. Рендер Canvas2D бөгөөд adaptive monitor зөвхөн тоглох үед frame interval хэмжинэ. Өмнөх desktop/WebGL хэмжилт одоогийн renderer-ийг төлөөлөхгүй; бодит утасны хэмжилт шаардлагатай. |
 
 Утасны тест: ижил release-ийг Safari ба Flutter WebView-д нээж, iPhone 13 Pro дээр Safari Develop → Web Inspector → Timelines/JavaScript & Events, Android дээр `chrome://inspect` → Performance ашиглан эхний болон дараагийн тоглолтын 30 секундийг бичнэ. 60 Hz дээр 16.7 ms, 120 Hz дээр 8.3 ms render төсөвтэй; зөвхөн 16 ms-ээс урт frame бүх төхөөрөмжид алдаа гэсэн үг биш. FPS, p95, raw/game clock, тухайн frame-ийн script/render/paint/GPU ажлыг хамт харьцуулна. Network, thermal/power state, host WebView-ийн refresh policy-г тэмдэглэнэ.
 
-2026-11-18 DPR + speed follow-up: Server-issued target speed thresholds and maximum remain authoritative. The actual scroll and spawn factor ramps toward each new target over 0.4 seconds, never above it. The transition is user-requested but **backend replay/score verification agreement is pending**; no financial eligibility can be inferred from a client run. A live DPR transition back to 1 required explicit CSS canvas sizing and was fixed. Browser checks covered DPR 1/1.5/3 on one 390×844 page, 320×568, 844×390, and 768×1024 layouts. In mock flight, a forced threshold yielded factors ~1.017/1.037/1.058/1.079/1.100 after 80/160/240/320/400 ms. This is a visual timing test, not an authoritative score test.
+2026-11-18 DPR + speed follow-up: Server-issued target speed thresholds and maximum remain authoritative. The actual scroll and spawn factor ramps toward each new target over 0.4 seconds, never above it. The transition is user-requested but **backend replay/score verification agreement is pending**; no financial eligibility can be inferred from a client run. A live DPR transition back to 1 required explicit CSS canvas sizing and was fixed. Browser checks covered DPR 1/1.5/3 on one 390×844 page, 320×568, 844×390, and 768×1024 layouts. In a local flight, a forced threshold yielded factors ~1.017/1.037/1.058/1.079/1.100 after 80/160/240/320/400 ms. This is a visual timing test, not an authoritative score test.
 
 After an iPhone 13 Pro report of 18 ms p95, the phone backing-pixel cap was lowered from 2 to 1.5 to reduce raster work by 44% on DPR 3 screens. The opt-in overlay displays a bounded frame window rather than a lifetime frame count. Physical-device retest is pending.
 

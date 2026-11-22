@@ -1,14 +1,17 @@
 import { newId } from './uuid.ts';
 import { ApiClient, ApiError } from './ApiClient.ts';
 import type {
-  DemoResult,
+  RunResult,
   GameConfig,
   LeaderboardRow,
   LifeOrder,
+  LifeHistoryPage,
   MiniappService,
   PlayerSnapshot,
   PurchaseOrder,
   BirdCatalogItem,
+  DailyStandings,
+  LeaderboardDay,
 } from './MiniappService';
 
 type Tournament = NonNullable<PlayerSnapshot['tournament']>;
@@ -38,10 +41,48 @@ const birdCodes: Record<string, string> = {
   santa: 'santa_sono',
   gold: 'goldy_sono',
 };
-const backgroundIds = ['classic', 'city', 'sunset'];
 const localBirdId = (code: string) => Object.keys(birdCodes).find((id) => birdCodes[id] === code);
 const catalogBirdId = (code: string) => localBirdId(code) ?? `server:${code}`;
-type Entry = { rank: number; nickname: string | null; totalScore: number };
+type Entry = {
+  rank: number;
+  nickname: string | null;
+  totalScore: number;
+  reachedAt?: string | null;
+};
+const validDay = (day: unknown): day is string =>
+  typeof day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(day);
+function leaderboardRow(entry: Entry): LeaderboardRow {
+  if (
+    !entry ||
+    !Number.isSafeInteger(entry.rank) ||
+    entry.rank < 1 ||
+    (entry.nickname !== null && typeof entry.nickname !== 'string') ||
+    !Number.isSafeInteger(entry.totalScore) ||
+    entry.totalScore < 0 ||
+    (entry.reachedAt != null &&
+      (typeof entry.reachedAt !== 'string' || !Number.isFinite(Date.parse(entry.reachedAt))))
+  )
+    throw new ApiError('INVALID_RESPONSE');
+  return {
+    rank: entry.rank,
+    name: entry.nickname ?? 'SONO',
+    score: entry.totalScore,
+    ...(entry.reachedAt ? { reachedAt: entry.reachedAt } : {}),
+  };
+}
+type HistoryResponse = {
+  tournament?: { id: number } | null;
+  entries: { title: string; lives: number; createdAt: string }[];
+  freePlays: { title: string; lives: number; day: string }[];
+  nextCursor?: string | null;
+};
+const ulaanbaatarDate = new Intl.DateTimeFormat('mn-MN', {
+  timeZone: 'Asia/Ulaanbaatar',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const RUN_LIMIT_MS = 15 * 60 * 1000;
 type Start = {
   sessionId: string;
   seed: string;
@@ -51,9 +92,9 @@ type Start = {
 };
 type Options = {
   client: ApiClient;
+  testLivesEnabled?: boolean;
   payWithPoints?: (request: { orderId: string }) => Promise<unknown>;
   paymentAvailable?: () => boolean;
-  dev?: boolean;
   now?: () => number;
 };
 
@@ -99,7 +140,6 @@ function validOrder(order: LifeOrder) {
 
 /** Player API only. Core callbacks and financial operations belong to the host/server. */
 export class ApiMiniappService implements MiniappService {
-  readonly mode = 'api' as const;
   gameConfig?: GameConfig;
   gameSeed?: string;
   price?: { pointsPerLife: number; maxLivesPerOrder: number };
@@ -112,8 +152,6 @@ export class ApiMiniappService implements MiniappService {
     best: 0,
     total: 0,
     selectedBird: 'pilot',
-    selectedBackground: 'classic',
-    owned: ['pilot', 'classic', 'city', 'sunset'],
     nicknameRequired: true,
     tournament: null,
   };
@@ -121,12 +159,14 @@ export class ApiMiniappService implements MiniappService {
   private me: LeaderboardRow | null = null;
   private boardReadAt = 0;
   private refreshTask: Promise<void> | null = null;
+  private priceTask: Promise<void> | null = null;
   private startTask: Promise<string> | null = null;
   private startKey = '';
-  private active: { id: string; receivedAt: number } | null = null;
+  private startRequestedAt = 0;
+  private active: { id: string; receivedAt: number; deadline: number } | null = null;
   private finishes = new Map<string, { score: number; durationMs: number; reason: string }>();
-  private finishTasks = new Map<string, Promise<DemoResult>>();
-  private results = new Map<string, DemoResult>();
+  private finishTasks = new Map<string, Promise<RunResult>>();
+  private results = new Map<string, RunResult>();
   private orders = new Map<string, { signature: string; value?: LifeOrder }>();
   private purchasing = new Map<string, { signature: string; task: Promise<'PENDING' | void> }>();
   private paymentOpened = new Set<string>();
@@ -146,14 +186,28 @@ export class ApiMiniappService implements MiniappService {
     this.options = options;
     this.now = options.now ?? (() => performance.now());
   }
+  get canGrantTestLives() {
+    return this.options.testLivesEnabled === true;
+  }
+  async grantTestLives() {
+    if (!this.canGrantTestLives) throw new ApiError('FORBIDDEN');
+    const response = await this.options.client.request<{ lives: number }>(
+      'POST',
+      '/api/v1/dev/lives',
+      { lives: 10 },
+    );
+    if (!Number.isSafeInteger(response?.lives) || response.lives < 0)
+      throw new ApiError('INVALID_RESPONSE');
+    await this.refresh();
+  }
   get canPay() {
     return this.options.paymentAvailable?.() ?? Boolean(this.options.payWithPoints);
   }
-  get canGrantLives() {
-    return Boolean(this.options.dev);
+  get runDeadline() {
+    return this.active?.deadline;
   }
   get birdCatalog() {
-    return this.catalog ? structuredClone(this.catalog) : undefined;
+    return this.catalog?.map((bird) => ({ ...bird }));
   }
   async initialize() {
     await this.options.client.login();
@@ -174,7 +228,8 @@ export class ApiMiniappService implements MiniappService {
     }
   }
   snapshot(): PlayerSnapshot {
-    return structuredClone(this.player);
+    const { tournament } = this.player;
+    return { ...this.player, tournament: tournament ? { ...tournament } : tournament };
   }
   refresh() {
     if (!this.refreshTask) {
@@ -204,14 +259,31 @@ export class ApiMiniappService implements MiniappService {
           this.invalidateBirds();
           if (hadCatalogAttempt) this.player.selectedBird = 'pilot';
         }
-        if (!this.price)
-          this.price = await this.options.client.request('GET', '/api/v1/lives/price');
-        if (!this.catalogAttempted) await this.refreshBirds().catch(() => undefined);
+        if (!this.price) void this.refreshPrice();
+        if (!this.catalogAttempted) void this.refreshBirds().catch(() => undefined);
       })().finally(() => {
         this.refreshTask = null;
       });
     }
     return this.refreshTask;
+  }
+  refreshPrice() {
+    if (this.price) return Promise.resolve();
+    if (this.priceTask) return this.priceTask;
+    this.priceTask = this.options.client
+      .request<NonNullable<MiniappService['price']>>('GET', '/api/v1/lives/price')
+      .then((price) => {
+        if (
+          Number.isSafeInteger(price?.pointsPerLife) &&
+          price.pointsPerLife >= 0 &&
+          Number.isSafeInteger(price.maxLivesPerOrder) &&
+          price.maxLivesPerOrder > 0
+        )
+          this.price = price;
+      })
+      .catch(() => undefined)
+      .finally(() => (this.priceTask = null));
+    return this.priceTask;
   }
   async setNickname(nickname: string) {
     try {
@@ -239,7 +311,10 @@ export class ApiMiniappService implements MiniappService {
   startRun() {
     if (this.startTask) return this.startTask;
     if (this.active) return Promise.reject(new ApiError('RESULT_PENDING'));
-    this.startKey ||= newId();
+    if (!this.startKey) {
+      this.startKey = newId();
+      this.startRequestedAt = this.now();
+    }
     this.startTask = (async () => {
       try {
         const start = await this.options.client.request<Start>(
@@ -249,7 +324,12 @@ export class ApiMiniappService implements MiniappService {
           this.startKey,
         );
         if (!validStart(start)) throw new ApiError('INVALID_RESPONSE');
-        this.active = { id: start.sessionId, receivedAt: this.now() };
+        this.active = {
+          id: start.sessionId,
+          receivedAt: this.now(),
+          // A retry of the same action must not extend the server session.
+          deadline: this.startRequestedAt + RUN_LIMIT_MS,
+        };
         this.gameConfig = start.config;
         this.gameSeed = String(start.seed);
         this.player.freePlaysLeft = start.freePlaysLeft;
@@ -267,7 +347,7 @@ export class ApiMiniappService implements MiniappService {
     });
     return this.startTask;
   }
-  finishRun(runId: string, score: number, reason: string): Promise<DemoResult> {
+  finishRun(runId: string, score: number, reason: string): Promise<RunResult> {
     const previous = this.results.get(runId);
     if (previous) return Promise.resolve({ ...previous });
     const pending = this.finishTasks.get(runId);
@@ -294,6 +374,7 @@ export class ApiMiniappService implements MiniappService {
         score: number;
         bestScore: number;
         rejectReason?: string;
+        newlyUnlocked?: string[];
       }>('POST', `/api/v1/games/${encodeURIComponent(runId)}/finish`, {
         score: finish.score,
         durationMs: finish.durationMs,
@@ -306,29 +387,79 @@ export class ApiMiniappService implements MiniappService {
           )
         ) {
           if (this.active?.id === runId) this.active = null;
+          this.finishes.delete(runId);
         }
         throw error;
       });
     if (
       !['FINISHED', 'REJECTED'].includes(response?.status) ||
       !Number.isSafeInteger(response.score) ||
-      response.score < 0
+      response.score < 0 ||
+      (response.newlyUnlocked !== undefined &&
+        (!Array.isArray(response.newlyUnlocked) ||
+          response.newlyUnlocked.some((code) => typeof code !== 'string' || !code)))
     )
       throw new ApiError('INVALID_RESPONSE');
-    const result: DemoResult = {
+    const result: RunResult = {
       score: response.score,
       reason: finish.reason,
       verification: response.status === 'FINISHED' ? 'ACCEPTED' : 'REJECTED',
       rejectReason: response.rejectReason,
+      newlyUnlocked: response.status === 'FINISHED' ? (response.newlyUnlocked ?? []) : [],
     };
     this.results.set(runId, result);
+    this.finishes.delete(runId);
     if (this.active?.id === runId) this.active = null;
     this.boardReadAt = 0;
     this.invalidateBirds();
     // A successful finish stays final even if the subsequent profile read fails.
     await this.refresh().catch(() => undefined);
-    if (!this.catalogAttempted) await this.refreshBirds().catch(() => undefined);
     return { ...result };
+  }
+  async loadLifeHistory(cursor?: string): Promise<LifeHistoryPage> {
+    const query = new URLSearchParams({ limit: '50' });
+    if (cursor) query.set('cursor', cursor);
+    const history = await this.options.client.request<HistoryResponse>(
+      'GET',
+      `/api/v1/lives/history?${query}`,
+    );
+    const { tournament, nextCursor } = history ?? {};
+    if (
+      !Array.isArray(history?.entries) ||
+      !Array.isArray(history.freePlays) ||
+      (tournament != null && !Number.isSafeInteger(tournament.id)) ||
+      (nextCursor != null &&
+        (typeof nextCursor !== 'string' || !/^\d+$/.test(nextCursor) || nextCursor === cursor)) ||
+      history.entries.some(
+        (row) =>
+          typeof row?.title !== 'string' ||
+          !Number.isSafeInteger(row.lives) ||
+          typeof row.createdAt !== 'string' ||
+          !Number.isFinite(Date.parse(row.createdAt)),
+      ) ||
+      history.freePlays.some(
+        (row) =>
+          typeof row?.title !== 'string' ||
+          !Number.isSafeInteger(row.lives) ||
+          typeof row.day !== 'string' ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(row.day),
+      )
+    )
+      throw new ApiError('INVALID_RESPONSE');
+    return {
+      tournamentId: tournament?.id ?? null,
+      nextCursor: nextCursor ?? null,
+      earned: history.entries.map((row) => ({
+        date: ulaanbaatarDate.format(new Date(row.createdAt)),
+        reason: row.title,
+        amount: row.lives,
+      })),
+      free: history.freePlays.map((row) => ({
+        date: row.day,
+        reason: row.title,
+        amount: row.lives,
+      })),
+    };
   }
   refreshLeaderboard(): Promise<void> {
     if (this.boardReadAt && Date.now() - this.boardReadAt < 60000) return Promise.resolve();
@@ -343,17 +474,44 @@ export class ApiMiniappService implements MiniappService {
       '/api/v1/leaderboard?limit=10',
     );
     if (tournamentId !== this.player.tournament?.id) return;
-    const row = (entry: Entry): LeaderboardRow => ({
-      rank: entry.rank,
-      name: entry.nickname ?? 'SONO',
-      score: entry.totalScore,
-    });
-    this.rows = board.entries.map(row);
-    this.me = board.me ? row(board.me) : null;
+    if (!Array.isArray(board?.entries)) throw new ApiError('INVALID_RESPONSE');
+    this.rows = board.entries.map(leaderboardRow);
+    this.me = board.me ? leaderboardRow(board.me) : null;
     this.boardReadAt = Date.now();
   }
+  async loadDailyLeaderboard(day?: string): Promise<DailyStandings> {
+    if (day !== undefined && !validDay(day)) throw new ApiError('INVALID_DAY');
+    const query = day ? `?day=${encodeURIComponent(day)}&limit=10` : '?limit=10';
+    const board = await this.options.client.request<{
+      day: string;
+      entries: Entry[];
+      me: Entry | null;
+      winner: Entry | null;
+    }>('GET', `/api/v1/leaderboard/daily${query}`);
+    if (!validDay(board?.day) || !Array.isArray(board.entries) || !('winner' in board))
+      throw new ApiError('INVALID_RESPONSE');
+    return {
+      day: board.day,
+      entries: board.entries.map(leaderboardRow),
+      me: board.me ? leaderboardRow(board.me) : null,
+      winner: board.winner ? leaderboardRow(board.winner) : null,
+    };
+  }
+  async loadLeaderboardDays(): Promise<LeaderboardDay[]> {
+    const response = await this.options.client.request<{
+      days: { day: string; winner: Entry | null }[];
+    }>('GET', '/api/v1/leaderboard/days');
+    if (!Array.isArray(response?.days)) throw new ApiError('INVALID_RESPONSE');
+    return response.days.map((entry) => {
+      if (!validDay(entry?.day) || !('winner' in entry)) throw new ApiError('INVALID_RESPONSE');
+      return {
+        day: entry.day,
+        winner: entry.winner ? leaderboardRow(entry.winner) : null,
+      };
+    });
+  }
   leaderboard() {
-    return structuredClone(this.rows);
+    return this.rows.map((row) => ({ ...row }));
   }
   ownRank() {
     return this.me ? { ...this.me } : null;
@@ -482,7 +640,6 @@ export class ApiMiniappService implements MiniappService {
     this.birdEpoch++;
     this.catalogAttempted = false;
     this.catalog = undefined;
-    this.player.owned = this.player.owned.filter((id) => backgroundIds.includes(id));
   }
   refreshBirds(): Promise<void> {
     if (this.birdTask) {
@@ -518,21 +675,17 @@ export class ApiMiniappService implements MiniappService {
         throw new ApiError('INVALID_RESPONSE');
       this.catalog = response.birds.map((bird) => ({
         id: catalogBirdId(bird.code),
+        code: bird.code,
         name: bird.name,
         unlockScore: bird.unlockScore,
         unlocked: bird.unlocked,
         selected: bird.code === response.selected,
       }));
       this.player.total = response.totalScore;
-      this.player.owned = [
-        ...this.player.owned.filter((id) => backgroundIds.includes(id)),
-        ...this.catalog.filter((bird) => bird.unlocked).map((bird) => bird.id),
-      ];
       this.applySelectedBird(response.selected);
     } catch (error) {
       if (epoch === this.birdEpoch) {
         this.catalog = undefined;
-        this.player.owned = this.player.owned.filter((id) => backgroundIds.includes(id));
       }
       throw error;
     }
@@ -542,20 +695,16 @@ export class ApiMiniappService implements MiniappService {
     const selected = this.catalog?.find((bird) => bird.id === selectedId);
     if (selected && !selected.unlocked)
       selectedId = this.catalog?.find((bird) => bird.unlocked && bird.unlockScore === 0)?.id ?? '';
-    this.player.selectedBird = Object.hasOwn(birdCodes, selectedId) ? selectedId : 'pilot';
+    this.player.selectedBird = Object.prototype.hasOwnProperty.call(birdCodes, selectedId)
+      ? selectedId
+      : 'pilot';
     if (this.catalog)
       this.catalog = this.catalog.map((bird) => ({
         ...bird,
         selected: bird.id === selectedId,
       }));
   }
-  selectItem(kind: 'bird' | 'background', id: string): void | Promise<void> {
-    if (kind === 'bird') return this.selectBird(id);
-    if (!backgroundIds.includes(id) || !this.player.owned.includes(id))
-      throw new ApiError('CATALOG_UNAVAILABLE');
-    this.player.selectedBackground = id;
-  }
-  private async selectBird(id: string) {
+  async selectBird(id: string) {
     const code = birdCodes[id];
     if (typeof code !== 'string') throw new ApiError('BIRD_NOT_FOUND');
     if (!this.catalog) await this.refreshBirds();
@@ -601,11 +750,6 @@ export class ApiMiniappService implements MiniappService {
       }
       throw error;
     }
-  }
-  async grantLives(lives: number) {
-    if (!this.canGrantLives) throw new ApiError('FORBIDDEN');
-    await this.options.client.request('POST', '/api/v1/dev/lives', { lives });
-    await this.refresh();
   }
   async checkConnection() {
     await this.options.client.request('GET', '/api/v1/me');

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 90 62" role="img" aria-label="Алтан гулдмай">
+  <defs>
+    <linearGradient id="face" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#fff0a4"/>
+      <stop offset=".42" stop-color="#ffd64d"/>
+      <stop offset="1" stop-color="#b96d05"/>
+    </linearGradient>
+    <linearGradient id="side" x1="0" x2="1">
+      <stop stop-color="#9b5305"/>
+      <stop offset="1" stop-color="#f9ba25"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 45 20 16 70 16 79 45 73 52 17 52Z" fill="url(#side)" stroke="#f7cb55" stroke-width="2"/>
+  <path d="M20 16H70L79 45H12Z" fill="url(#face)" stroke="#fff2a4" stroke-width="2"/>
+  <path d="M26 23H64L69 40H21Z" fill="none" stroke="#fff0ad" stroke-width="1.5" opacity=".8"/>
+  <text x="45" y="34" fill="#bb811a" font-family="Arial,sans-serif" font-size="13" font-weight="900" text-anchor="middle">FGN</text>
+</svg>

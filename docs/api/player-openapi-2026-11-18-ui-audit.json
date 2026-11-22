@@ -39,10 +39,6 @@
     {
       "name": "Auth",
       "description": "Login with a core app launch token, and token refresh. No access token needed."
-    },
-    {
-      "name": "Dev only",
-      "description": "Exists only in the mock profile (local development and load tests). Not available in production."
     }
   ],
   "paths": {
@@ -500,72 +496,6 @@
           },
           "429": {
             "description": "`RATE_LIMITED`: Too many requests. Wait for `Retry-After` seconds.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "`INTERNAL_ERROR`: Unexpected server error. Safe to retry with the same `Idempotency-Key`.",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/api/v1/dev/lives": {
-      "post": {
-        "tags": [
-          "Dev only"
-        ],
-        "summary": "Give the logged-in player lives (mock profile only)",
-        "operationId": "grant",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GrantRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GrantResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "`VALIDATION_FAILED`: A field or parameter is missing or invalid; see `errors` or `detail`.\n\n`MALFORMED_REQUEST`: The request could not be read (bad JSON, wrong type in the path, unsupported method).",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Problem"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "`UNAUTHORIZED`: No valid access token. Refresh it, or log in again.",
             "content": {
               "application/problem+json": {
                 "schema": {

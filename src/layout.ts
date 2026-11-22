@@ -1,3 +1,5 @@
+import { BIRD_HALF_HEIGHT } from './rules';
+
 /** Viewport geometry. Artwork is cropped to cover; gameplay geometry remains proportional. */
 export type Insets = { top: number; right: number; bottom: number; left: number };
 export type GameLayout = {
@@ -52,7 +54,7 @@ export function reachableCenterRange(
 
   const previousCenter = (previous.top + previous.bottom) / 2;
   const previousGap = previous.bottom - previous.top;
-  const birdRadius = 17 * layout.unit;
+  const birdRadius = BIRD_HALF_HEIGHT * layout.unit;
   const safetyMargin = 8 * layout.unit;
   const maximumChange = Math.max(0, (previousGap + gap) / 2 - 2 * birdRadius - safetyMargin);
   const lower = Math.max(minimum, previousCenter - maximumChange);
@@ -63,19 +65,16 @@ export function reachableCenterRange(
   const nearest = Math.max(minimum, Math.min(maximum, previousCenter));
   return [nearest, nearest];
 }
-/** Resize a live opening without stretching its clearance relative to the bird. */
+/** Keep the center's relative position and use the opening size for the new field. */
 export function resizeOpening(
   previous: GameLayout,
   next: GameLayout,
   opening: { top: number; bottom: number },
+  gap: number,
 ) {
   const progress =
     ((opening.top + opening.bottom) / 2 - previous.safe.top) /
     Math.max(1, previous.ground - previous.safe.top);
-  const gap = Math.min(
-    ((opening.bottom - opening.top) * next.unit) / previous.unit,
-    (next.ground - next.safe.top) * 0.5,
-  );
   const [minimum, maximum] = pipeCenterRange(next, gap);
   const desired = next.safe.top + progress * (next.ground - next.safe.top);
   const center = Math.max(minimum, Math.min(maximum, desired));
@@ -84,7 +83,7 @@ export function resizeOpening(
 /** Keep the opening proportional to the bird across normal phone sizes. */
 export function responsiveGap(layout: GameLayout, gap: number, baseGap: number): number {
   const available = layout.ground - layout.safe.top;
-  // 0.9 is a demo tuning value close to the prior 390×844 presentation.
+  // 0.9 preserves the current gameplay corridor proportions at the reference viewport.
   // The viewport cap applies only when the normal opening cannot fit comfortably.
   const desiredScale = 0.9;
   const viewportScale = (available * 0.34) / (baseGap * layout.unit);

@@ -1,5 +1,7 @@
 # UI дэлгэцүүдэд шаардлагатай backend API өгөгдөл
 
+2026-11-19 шинэчлэлт: [Postman collection](api/flappy-player-api-2026-11-19.postman_collection.json)-д `GET /api/v1/leaderboard/daily?limit=10`, `GET /api/v1/leaderboard/days`, `GET /api/v1/leaderboard/daily?day=YYYY-MM-DD&limit=10` нэмэгдсэн. Frontend-ийн өнөөдрийн самбар, өмнөх өдрүүдийн календарь, сонгосон өдрийн чансаа эдгээр API-тай холбогдсон. `reachedAt` ирвэл оноонд хүрсэн цагийг Улаанбаатарын цагаар харуулна. Доорх 2026-11-18-ны хүснэгт болон санал хэсэг нь тухайн өдрийн аудитын түүх; өдрийн чансааны endpoint байхгүй гэсэн мөр одоо хүчингүй. `GET /api/v1/lives/history`, `GET /api/v1/birds`, `PUT /api/v1/me/bird` мөн frontend-д холбогдсон.
+
 2026-11-18-нд одоогийн Fine Gold UI, BRD V2.1, frontend код болон live Swagger `/v3/api-docs/player`-ийг тулгав. Live schema HTTP 200 бөгөөд 15 path байна. [Шинэ snapshot](api/player-openapi-2026-11-18-ui-audit.json). Өмнөх 14-path snapshot нь өмнөх шалгалтын эх хэвээр хадгалагдана.
 
 **Төлөвийн тайлбар:** “Байгаа / холбогдсон” нь гэрээ болон frontend adapter байна гэсэн утгатай. “Swagger-д нэмэгдсэн” нь гэрээ байгаа, frontend холболт үлдсэн. “Нэмэх” хүснэгтийн path, field нэрс нь санал бөгөөд одоогийн endpoint гэж үзэхгүй. Энэ шалгалтаар тоглоомын код өөрчлөх, санхүүгийн үйлдэл хийхгүй.

@@ -86,7 +86,7 @@ export function installPerformanceDiagnostics(game: Phaser.Game, inspect: () => 
   const sample = () => {
     renderedFrames++;
     const state = inspect() as { phase?: string };
-    if (state.phase === 'PLAYING' && !document.hidden) metrics.record(performance.now());
+    if (state.phase === 'PLAYING' && !document.hidden) metrics.record(game.loop.now);
     else metrics.pause();
   };
   const pause = () => metrics.pause();

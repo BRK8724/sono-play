@@ -36,9 +36,11 @@ export class ApiClient {
   }
 
   private tokens(tokens: Tokens) {
-    if (!tokens.accessToken) throw new ApiError('INVALID_TOKEN_RESPONSE');
+    if (typeof tokens?.accessToken !== 'string' || !tokens.accessToken)
+      throw new ApiError('INVALID_TOKEN_RESPONSE');
     this.accessToken = tokens.accessToken;
-    this.refreshToken = tokens.refreshAvailable ? (tokens.refreshToken ?? '') : '';
+    this.refreshToken =
+      tokens.refreshAvailable && typeof tokens.refreshToken === 'string' ? tokens.refreshToken : '';
   }
 
   private renew() {
@@ -99,11 +101,11 @@ export class ApiClient {
         keepalive: path.endsWith('/finish'),
       });
       const text = await response.text();
-      // Preserve int64 seed digits before JavaScript converts numbers to doubles.
+      // Preserve int64 game seeds and pagination cursors before number conversion.
       let data = null;
       try {
         data = text
-          ? JSON.parse(text.replace(/("seed"\s*:\s*)(-?\d+)(?=\s*[,}])/g, '$1"$2"'))
+          ? JSON.parse(text.replace(/("(?:seed|nextCursor)"\s*:\s*)(-?\d+)(?=\s*[,}])/g, '$1"$2"'))
           : null;
       } catch {
         // Gateways can return HTML errors. Keep the HTTP status for auth/retry handling.

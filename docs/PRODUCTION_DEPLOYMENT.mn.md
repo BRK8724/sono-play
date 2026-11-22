@@ -16,20 +16,19 @@
 Node.js 22.18+ болон lockfile-тай эх кодоос build хийнэ. Доорх нь тусдаа API origin сонгосон `.env.production`-ийн жишээ. `VITE_API_BASE_URL` нь `/api/v1` нэмээгүй origin байна. Код endpoint-ийн `/api/v1/…` хэсгийг өөрөө нэмдэг.
 
 ```dotenv
-VITE_SERVICE_MODE=api
 VITE_API_BASE_URL=https://play-api.example.com
-# Production launch token comes from SonoBridge; omit VITE_AUTH_MODE.
+# Production launch token comes from SonoBridge.
 ```
 
 ```bash
 npm ci
-npm run check
+npm run format:check
 npm run build -- --base=/sono-play/
 ```
 
 Үүссэн `dist/` хавтсыг бүхлээр нь vendor-ийн `/sono-play/` замд байршуулж, Flutter-д төгсгөлдөө `/` тэмдэгтэй HTTPS URL өгнө. Mogul Square болон зураг/font файлууд build-д хамт орно. `index.html` болон `release-manifest.json`-ийг revalidate хийнэ. Runtime зураг, font, thumbnail нь build-ээр content hash-тай `assets/static/` URL авна. Эдгээр файл болон Vite-ийн hash-тай JS/CSS-д immutable cache хэрэглэж болно. Нээлттэй WebView болон rollback-д зориулж өмнөх hash файлуудыг хадгална. Шинэ asset нэмэхдээ `build/runtime-assets.mjs` бүртгэлийг шинэчилнэ. [Cache болон release-ийн заавар](CACHE_AND_PERFORMANCE.mn.md), [Nginx template](../deploy/nginx.conf.example)-ийг hosting дээр тааруулна.
 
-Production build үндсэн URL-аар API adapter ашиглана. `?mode=mock`, `?screen=…`, `?screens=1` нь одоогийн build-д тусгаарлагдсан жишээ өгөгдлийн харагдац нээдэг. Native-аас үндсэн тоглоомын URL-ийг нээнэ. `VITE_*` утгууд хэрэглэгчид хүрэх bundle-д ордог тул нууц түлхүүрийг серверийн тохиргоонд байрлуулна.
+Production build нь зөвхөн Player API adapter-тай. Native-аас үндсэн тоглоомын URL-ийг нээнэ. `VITE_*` утгууд хэрэглэгчид хүрэх bundle-д ордог тул нууц түлхүүрийг серверийн тохиргоонд байрлуулна.
 
 2. **API routing-ийн хоёр боломж**
 
@@ -50,7 +49,7 @@ interface HostBridge {
 
 Энэ interface-ийг хангасан объектыг `window.SonoBridge`-д холбоно. Vendor native channel, Promise resolve/reject, алдаа болон цуцлалтын хариуг хэрэгжүүлнэ. Bridge-ийг web authentication эхлэхээс өмнө бэлэн болгоно. Зөвхөн `onPageFinished` дээр нэмэхэд эхний auth дуудлагатай уралдах боломжтой.
 
-Flutter нь нэвтэрсэн хэрэглэгчид зориулсан богино хугацаатай нэг удаагийн launch assertion авна. Web түүнийг `POST /api/v1/auth/exchange` руу дамжуулж game access/refresh token авна. Core-ийн assertion олгох, Play-ийн баталгаажуулах бодит гэрээ, issuer/audience, хугацаа, replay хамгаалалт болон түлхүүрийн солилцоог хоёр backend баг эцэслэх шаардлагатай. Native/Core credential болон HMAC secret сервер/native талд хадгалагдана. Одоогийн local-dev mock launch token-ийг production issuance-тай солих ажил хүлээгдэж байна.
+Flutter нь нэвтэрсэн хэрэглэгчид зориулсан богино хугацаатай нэг удаагийн launch assertion авна. Web түүнийг `POST /api/v1/auth/exchange` руу дамжуулж game access/refresh token авна. Core-ийн assertion олгох, Play-ийн баталгаажуулах бодит гэрээ, issuer/audience, хугацаа, replay хамгаалалт болон түлхүүрийн солилцоог хоёр backend баг эцэслэх шаардлагатай. Native/Core credential болон HMAC secret сервер/native талд хадгалагдана. Development болон production host хоёулаа `SonoBridge` launch token өгөх шаардлагатай; browser mock identity байхгүй.
 
 Vendor safe-area-г CSS pixel-ээр `window.__SONO_SAFE_AREA__ = {top,right,bottom,left}` хэлбэрээр өгч, өөрчлөгдөхөд `sono-safe-area` event илгээнэ. Web нь `visibilitychange`/`pagehide`-ийг ажигладаг. Native app lifecycle, WebView хаах/буцах үйлдэл, серверийн session дуусгах гэрээг бодит Flutter төхөөрөмж дээр уялдуулж шалгана. Production Flutter wrapper болон тусгай native termination hook-ийн хэрэгжилт/баталгаажуулалт хүлээгдэж байна.
 
