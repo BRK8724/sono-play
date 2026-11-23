@@ -7,8 +7,7 @@ const resolvedVirtualId = '\0' + virtualId;
 
 // Keep active runtime files explicit. Original artwork and reference exports stay in public/.
 const runtimeFiles = [
-  'assets/sono/menu-background.webp',
-  'assets/sono/menu-background-mobile.webp',
+  'assets/sono/menu-background-winter.webp',
   'assets/sono/sono-body.png',
   'assets/sono/sono-wing-1.png',
   'assets/sono/sono-wing-2.png',
