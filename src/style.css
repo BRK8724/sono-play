@@ -2534,7 +2534,9 @@ body[data-modal-open] #scene-back {
 .info-card .gift-video-description {
   margin: 0;
   color: #646077;
-  font: 500 13px/1.6 Nunito, sans-serif;
+  font:
+    500 13px/1.6 Nunito,
+    sans-serif;
   text-align: left;
 }
 .gift-back-button {
@@ -2543,6 +2545,8 @@ body[data-modal-open] #scene-back {
   background: none;
   padding: 8px 12px;
   color: var(--purple);
-  font: 800 12px Nunito, sans-serif;
+  font:
+    800 12px Nunito,
+    sans-serif;
   cursor: pointer;
 }

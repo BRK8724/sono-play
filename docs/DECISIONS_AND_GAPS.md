@@ -12,7 +12,7 @@
 
 - Backend must finalize SEC-02 authoritative score validation and any reward eligibility rules. No client-reported score may trigger financial value.
 - Core and Play owners must finalize signed, idempotent payment/repaid-loan events and reconciliation. The provided Player API schema does not define the Core callbacks.
-- The Flutter vendor must implement and verify the `SonoBridge` launch-token and optional native payment callbacks on iOS and Android.
+- The Flutter vendor must implement and verify the `SonoBridge` methods (`getLaunchToken`, `payWithPoints`, `getPointBalance`, `openExternalUrl`; see INTEGRATION.md) on iOS and Android.
 - Current Player API support for standings/history, point balance, prize metadata, and `/api/v1/lives/history` must be reconciled against the UI contract and deployment environment.
 - Backend must align tournament skin unlock thresholds and game configuration with the signed-off product rules. The frontend follows server catalog/config values and does not override them.
 - The supplied day, evening, and night artwork and Gold SONO wing poses are integrated. Matching poses for the other birds and any additional approved theme variants remain asset dependencies.

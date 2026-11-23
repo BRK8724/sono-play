@@ -2,7 +2,7 @@ import { newId } from './services/uuid';
 import { GameAudio } from './audio/GameAudio';
 import { assetUrl } from './assets';
 import { ApiError } from './services/ApiClient';
-import { errorMessage } from './services/errors';
+import { errorMessage, isTransient, NICKNAME_RULES, validNickname } from './services/errors';
 import { openExternalUrl } from './services/HostBridge';
 import type { RunEndReason } from './rules';
 
@@ -284,7 +284,8 @@ export class Frontend {
     this.busy = true;
     this.refresh();
     try {
-      await this.service.refresh?.();
+      if (this.service.refreshIfStale) await this.service.refreshIfStale(60000);
+      else await this.service.refresh?.();
       if (navigationVersion !== this.navigationVersion || document.hidden) return;
       const player = this.service.snapshot();
       this.refresh();
@@ -392,6 +393,10 @@ export class Frontend {
     if (panel === 'buy' && changed && !this.service.price)
       void this.service.refreshPrice?.().then(() => {
         if (this.panel === 'buy') this.render();
+      });
+    if (panel === 'buy' && changed && this.service.refreshPoints)
+      void this.service.refreshPoints().then(() => {
+        if (this.panel === 'buy' && !this.busy) this.render();
       });
   }
   private newLifeHistory() {
@@ -875,13 +880,19 @@ export class Frontend {
       case 'gift-video':
         this.content.innerHTML = `<section class="gift-video-content"><div class="gift-video-frame"><iframe src="https://www.youtube-nocookie.com/embed/q8edb6pi5GQ?start=346&playsinline=1&rel=0" title="Бэлгийн танилцуулга видео" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowfullscreen></iframe></div><button class="small-button gift-youtube-button" data-action="open-gift-youtube">▶ YOUTUBE ДЭЭР ҮЗЭХ ↗</button><p class="gift-video-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p><button class="gift-back-button" data-action="back-to-gifts">← БЭЛЭГ РҮҮ БУЦАХ</button></section>`;
         break;
-      case 'buy':
-        this.content.innerHTML = `${image('fine-gold/pilot.webp', 'buy-avatar')}<div class="quantity-cost">${image('final/coin-2a011ea2.png')}<span>${this.quantity * this.pointCost} SONO POINT</span></div><div class="quantity-controls"><button data-action="minus" aria-label="Эрх хасах" ${this.quantity === 1 ? 'disabled' : ''}>−</button><output aria-live="polite">${this.quantity}</output><button data-action="plus" aria-label="Эрх нэмэх" ${this.quantity === this.maxQuantity ? 'disabled' : ''}>+</button></div><div class="panel-actions"><button class="small-button" data-action="buy-attempts" ${!this.service.price || p.points === null ? 'disabled' : ''}>${!this.service.price ? 'ҮНЭ АЧААЛЖ БАЙНА' : 'АВАХ'}</button></div>${this.error ? `<p class="error-copy" role="alert">${escapeText(this.error)}</p>` : ''}${p.points === null ? '' : `<div class="points-card"><h3>ТАНЫ SONO POINT:</h3><strong>${image('final/coin-2a011ea2.png')}${p.points.toLocaleString()}</strong><button data-action="refresh-points" aria-label="Пойнт шинэчлэх">${image('final/exchange.svg')}</button></div>`}`;
+      case 'buy': {
+        // The host checks the balance again at its PIN screen; a known shortfall only saves a trip.
+        const shortOfPoints =
+          p.points !== null &&
+          Boolean(this.service.price) &&
+          p.points < this.orderCostOf(this.quantity);
+        this.content.innerHTML = `${image('fine-gold/pilot.webp', 'buy-avatar')}<div class="quantity-cost">${image('final/coin-2a011ea2.png')}<span>${this.quantity * this.pointCost} SONO POINT</span></div><div class="quantity-controls"><button data-action="minus" aria-label="Эрх хасах" ${this.quantity === 1 ? 'disabled' : ''}>−</button><output aria-live="polite">${this.quantity}</output><button data-action="plus" aria-label="Эрх нэмэх" ${this.quantity === this.maxQuantity ? 'disabled' : ''}>+</button></div><div class="panel-actions"><button class="small-button" data-action="buy-attempts" ${!this.service.price || shortOfPoints ? 'disabled' : ''}>${!this.service.price ? 'ҮНЭ АЧААЛЖ БАЙНА' : shortOfPoints ? 'ПОЙНТ ХҮРЭЛЦЭХГҮЙ' : 'АВАХ'}</button></div>${this.error ? `<p class="error-copy" role="alert">${escapeText(this.error)}</p>` : ''}${p.points === null ? '' : `<div class="points-card"><h3>ТАНЫ SONO POINT:</h3><strong>${image('final/coin-2a011ea2.png')}${p.points.toLocaleString()}</strong><button data-action="refresh-points" aria-label="Пойнт шинэчлэх">${image('final/exchange.svg')}</button></div>`}`;
         break;
+      }
       case 'confirmation':
         {
           const order = this.service.pendingOrder;
-          this.content.innerHTML = `<h3>ТӨЛБӨР ХҮЛЭЭГДЭЖ БАЙНА</h3><p class="feedback-copy">${order?.lives ?? this.quantity} тоглох эрх · ${order?.pointsCost ?? this.orderCost()} SP</p><p class="small-note">Төлбөрийг SONO апп-аар баталгаажуулсны дараа эрх нэмэгдэнэ.</p><p class="error-copy">${escapeText(this.error)}</p><div class="panel-actions">${this.service.canPay ? '<button class="small-button" data-action="pay-order">SONO АППААР БАТЛАХ</button>' : ''}<button class="small-button" data-action="check-order">ТӨЛӨВ ШАЛГАХ</button></div>`;
+          this.content.innerHTML = `<h3>ТӨЛБӨР ХҮЛЭЭГДЭЖ БАЙНА</h3><p class="feedback-copy">${order?.lives ?? this.quantity} тоглох эрх · ${order?.pointsCost ?? this.orderCost()} SP</p><p class="small-note">Төлбөрийг SONO апп-аар баталгаажуулсны дараа эрх нэмэгдэнэ.</p><p class="error-copy">${escapeText(this.error)}</p><div class="panel-actions">${this.service.canPay ? '<button class="small-button" data-action="pay-order">SONO АППААР БАТЛАХ</button>' : ''}<button class="small-button" data-action="check-order">ТӨЛӨВ ШАЛГАХ</button>${this.service.abandonOrder ? '<button class="small-button" data-action="abandon-order">БОЛИХ</button>' : ''}</div>`;
           break;
         }
         break;
@@ -962,6 +973,13 @@ export class Frontend {
   private async saveNickname() {
     if (this.busy) return;
     this.nicknameDraft = this.content.querySelector<HTMLInputElement>('input')!.value.trim();
+    if (!validNickname(this.nicknameDraft)) {
+      // Same rules as the server; checking here saves the rate-limited request.
+      this.error = NICKNAME_RULES;
+      this.render();
+      this.content.querySelector<HTMLInputElement>('input')?.focus();
+      return;
+    }
     this.busy = true;
     this.error = '';
     this.render();
@@ -970,7 +988,10 @@ export class Frontend {
       this.open('nickname-success');
       this.refresh();
     } catch (error) {
-      this.error = errorMessage(error);
+      this.error =
+        error instanceof ApiError && error.code === 'VALIDATION_FAILED'
+          ? NICKNAME_RULES
+          : errorMessage(error);
       if (error instanceof ApiError && error.code === 'NICKNAME_TAKEN')
         this.open('nickname-failure');
     } finally {
@@ -985,8 +1006,11 @@ export class Frontend {
   private orderCost() {
     const order = this.order;
     if (!order) return 0;
-    if (order.kind === 'attempts') return order.quantity * this.pointCost;
+    if (order.kind === 'attempts') return this.orderCostOf(order.quantity);
     return 0;
+  }
+  private orderCostOf(quantity: number) {
+    return quantity * this.pointCost;
   }
   private beginOrder(order: PurchaseOrder, origin: 'buy' | 'store') {
     if (this.panel === 'buy') this.purchasePreview = this.card.cloneNode(true) as HTMLElement;
@@ -1016,8 +1040,7 @@ export class Frontend {
       this.setModalVisible(true);
       if (result === 'PENDING') this.scheduleOrderCheck();
     } catch (error) {
-      this.orderRetryRequired =
-        error instanceof ApiError && (error.status === 0 || error.status >= 500);
+      this.orderRetryRequired = isTransient(error);
       this.error =
         error instanceof ApiError && error.code === 'INSUFFICIENT_POINTS'
           ? 'ТАНЫ ОНОО ХҮРЭЛЦЭХГҮЙ БАЙНА.'
@@ -1060,14 +1083,15 @@ export class Frontend {
       return;
     }
     if (action === 'open-gift-youtube') {
-      void openExternalUrl('https://www.youtube.com/watch?v=q8edb6pi5GQ&t=346s')
-        .catch((error) => this.notify(errorMessage(error)));
+      void openExternalUrl('https://www.youtube.com/watch?v=q8edb6pi5GQ&t=346s').catch((error) =>
+        this.notify(errorMessage(error)),
+      );
       return;
     }
     if (action === 'see-guide') {
-      void openExternalUrl(
-        'https://www.youtube.com',
-      ).catch((error) => this.notify(errorMessage(error)));
+      void openExternalUrl('https://www.youtube.com').catch((error) =>
+        this.notify(errorMessage(error)),
+      );
       return;
     } else if (action === 'music') {
       this.audio.setMusic(!this.audio.music);
@@ -1163,7 +1187,13 @@ export class Frontend {
       this.content.scrollTop = 0;
       void this.loadDays();
     } else if (action === 'refresh-points') {
-      void this.apiAction();
+      void this.refreshPoints();
+      return;
+    } else if (action === 'abandon-order') {
+      clearTimeout(this.orderTimer);
+      this.service.abandonOrder?.();
+      this.orderRetryRequired = false;
+      this.open(this.purchaseOrigin);
       return;
     } else if (action === 'done') {
       if (this.purchaseOrigin === 'store') this.open('store');
@@ -1224,6 +1254,20 @@ export class Frontend {
         this.content
           .querySelector<HTMLButtonElement>(`[data-action="${focusedAction}"]`)
           ?.focus({ preventScroll: true });
+    }
+  }
+  private async refreshPoints() {
+    if (!this.service.refreshPoints) return this.apiAction();
+    this.busy = true;
+    this.render();
+    try {
+      await this.service.refreshPoints();
+    } finally {
+      this.busy = false;
+      this.render();
+      this.content
+        .querySelector<HTMLButtonElement>('[data-action="refresh-points"]')
+        ?.focus({ preventScroll: true });
     }
   }
   private async apiAction() {

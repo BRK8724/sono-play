@@ -10,7 +10,7 @@ This folder is the standalone, API-connected Flappy SONO WebView client. It cont
 4. Use `npm run dev` only for development. A regular browser without SONO host launch credentials cannot sign in.
 5. Run `npm run build` to validate TypeScript and generate the production bundle in `dist/`.
 
-The production host must provide `window.SonoBridge.getLaunchToken()`. If native payment is enabled, it must also provide `window.SonoBridge.payWithPoints({ orderId })`. Keep PIN handling and Core credentials in SONO Core/native code.
+The production host must provide `window.SonoBridge.call(method, params)` with `getLaunchToken`, `payWithPoints`, `getPointBalance` and `openExternalUrl` ([INTEGRATION.md](INTEGRATION.md#host-bridge)). Keep PIN handling and Core credentials in SONO Core/native code.
 
 ## Key files
 

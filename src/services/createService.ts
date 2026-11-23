@@ -1,6 +1,6 @@
-import { ApiClient, ApiError } from './ApiClient';
+import { ApiClient } from './ApiClient';
 import { ApiMiniappService } from './ApiMiniappService';
-import { hostBridge, launchToken } from './HostBridge';
+import { hostSupports, launchToken, payWithPoints, pointBalance } from './HostBridge';
 import type { MiniappService } from './MiniappService';
 import { GuestService } from './GuestService';
 import { createLocalMockService } from './LocalMockApi';
@@ -25,21 +25,17 @@ function previewLaunchToken() {
   return `mock:${previewUser}:${Date.now()}_${newId()}`;
 }
 
+const mockAuth = import.meta.env.VITE_API_TEST_MOCK_AUTH === '1';
+
 const apiService: MiniappService = new ApiMiniappService({
   client: new ApiClient({
     baseUrl: import.meta.env.VITE_API_BASE_URL ?? '',
-    getLaunchToken: () =>
-      import.meta.env.VITE_API_TEST_MOCK_AUTH === '1'
-        ? Promise.resolve(previewLaunchToken())
-        : launchToken(),
+    getLaunchToken: () => (mockAuth ? Promise.resolve(previewLaunchToken()) : launchToken()),
   }),
-  testLivesEnabled: import.meta.env.VITE_API_TEST_MOCK_AUTH === '1',
-  paymentAvailable: () => Boolean(hostBridge()?.payWithPoints),
-  payWithPoints: async (request) => {
-    const bridge = hostBridge();
-    if (!bridge?.payWithPoints) throw new ApiError('HOST_PAYMENT_REQUIRED');
-    return bridge.payWithPoints(request);
-  },
+  testLivesEnabled: mockAuth,
+  paymentAvailable: () => hostSupports('payWithPoints'),
+  payWithPoints: ({ orderId }) => payWithPoints(orderId),
+  pointBalance,
 });
 
 const previewMode = new URLSearchParams(window.location.search);

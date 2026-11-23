@@ -81,13 +81,18 @@ export interface MiniappService {
   readonly birdCatalog?: BirdCatalogItem[];
   initialize?(): Promise<void>;
   refresh?(): Promise<void>;
+  /** Refreshes only when the snapshot is older than maxAgeMs or would stop the next game. */
+  refreshIfStale?(maxAgeMs: number): Promise<void>;
+  /** Reads the SONO point balance from the host into the snapshot. */
+  refreshPoints?(): Promise<void>;
+  /** Forgets the pending order on this device; the server lets it expire. */
+  abandonOrder?(): void;
   refreshLeaderboard?(): Promise<void>;
   refreshBirds?(): Promise<void>;
   refreshPrice?(): Promise<void>;
   setNickname?(nickname: string): Promise<void>;
   checkOrder?(): Promise<LifeOrder>;
   payOrder?(): Promise<void>;
-  checkConnection?(): Promise<void>;
   grantTestLives?(): Promise<void>;
   addMockScore?(): void;
   resetMock?(): void;
