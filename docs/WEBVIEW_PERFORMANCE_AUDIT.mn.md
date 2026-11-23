@@ -1,6 +1,6 @@
 # WebView тоглоомын гүйцэтгэлийн аудит — 2026-11-18
 
-2026-11-19 artwork update: Supplied day, evening and night gameplay art now renders with matching pipe caps/shafts. The new 128px birds and 160px store thumbnails are in use. Evening art is used 17:00–18:00 Asia/Ulaanbaatar, inside the existing day period; night begins at 18:00. The larger supplied menu export was omitted because the current menu art depicts the same scene at a smaller transfer size. The other supplied bird sprites have one pose each.
+2026-11-19 artwork update: Supplied day, evening and night gameplay art now renders with matching pipe caps/shafts. The new 128px birds and 160px store thumbnails are in use. Asia/Ulaanbaatar time picks the art: day 08:00–16:00, evening 16:00–19:00, night 19:00–08:00. The larger supplied menu export was omitted because the current menu art depicts the same scene at a smaller transfer size. The other supplied bird sprites have one pose each.
 
 2026-11-19 Gold SONO update: The supplied 128×118 wingless body and three aligned wing poses now render as one Gold bird in Ready and gameplay. The Gold store thumbnail uses the matching composited art. Other birds still use their supplied single-image sprites.
 

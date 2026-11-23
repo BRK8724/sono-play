@@ -31,6 +31,7 @@ const runtimeFiles = [
   'assets/sono/pipe-night-shaft.webp',
   'assets/sono/pipe-night-lower-cap.webp',
   'assets/sono/pipe-night-upper-cap.webp',
+  'assets/fine-gold/sponser-finegold.png',
   'assets/final/coin-2a011ea2.png',
   'assets/final/effects.svg',
   'assets/final/emoji-1-55041f66.png',

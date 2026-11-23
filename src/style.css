@@ -290,26 +290,41 @@ body[data-phase='HOME'] #sky {
 .music-toggle[aria-pressed='false'] {
   background: #a2a2a2;
 }
+.home-sponsor {
+  grid-area: music;
+  justify-self: start;
+  width: auto;
+  height: 30px;
+  pointer-events: none;
+}
+/* Above the dialog backdrop (.info-overlay, z-index 30) so the logo is never dimmed. */
 .sponsor {
   position: absolute;
-  z-index: 6;
+  z-index: 31;
   bottom: calc(var(--safe-bottom) + 16px);
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 5px;
-  font-size: 10px;
   pointer-events: none;
 }
 .sponsor img {
-  width: 49px;
-  height: 34px;
+  width: auto;
+  height: 30px;
 }
 body:not([data-phase='HOME']) .sponsor,
 body:not([data-modal-open]) .sponsor {
   display: none;
+}
+/* Keep a centred dialog clear of the sponsor line: 16px offset + 30px logo + 30px gap. */
+body[data-phase='HOME'] .info-card {
+  max-height: calc(100% - 76px);
+}
+@media (max-height: 600px) {
+  body[data-phase='HOME'] .info-card[data-panel^='nickname-'] {
+    transform: none;
+  }
 }
 body[data-phase='HOME'][data-modal-open] #viewport {
   background-position: 10% center;
@@ -472,10 +487,12 @@ body[data-phase='HOME'][data-modal-open] #viewport {
 .result-heart.empty img {
   filter: grayscale(1);
 }
-.over-content .green {
+/* Outranks the larger-screen .game-button.green sizes: the card is never wider than 340px. */
+.over-content .game-button.green {
   width: 100%;
   min-height: 62px;
-  font-size: clamp(20px, 5.5vw, 28px);
+  font-size: clamp(20px, 7.4vw, 28px);
+  white-space: nowrap;
 }
 .over-content p {
   max-width: 290px;
@@ -486,13 +503,14 @@ body[data-phase='HOME'][data-modal-open] #viewport {
 .over-content p:empty {
   display: none;
 }
-.text-button {
-  min-height: 44px;
-  border: 0;
-  padding: 9px 12px;
-  background: transparent;
-  color: inherit;
-  font-size: 12px;
+.over-content .over-home {
+  width: auto;
+  min-width: 110px;
+  min-height: 46px;
+  margin-top: clamp(8px, 5vh, 48px);
+  border-radius: 13px;
+  padding: 8px 18px;
+  font-size: 18px;
 }
 .info-overlay {
   position: absolute;
@@ -724,6 +742,7 @@ body[data-phase='HOME'][data-modal-open] #viewport {
   width: 135px;
   height: 158px;
   margin: 25px auto 18px;
+  object-fit: contain;
 }
 .info-card[data-panel$='success'],
 .info-card[data-panel$='failure'],
@@ -801,9 +820,8 @@ body[data-phase='HOME'][data-modal-open] #viewport {
 .info-card[data-panel='nickname-failure'] .purchase-feedback {
   top: 136px;
   left: calc(50% - 7px);
-  width: 168px;
+  width: 230px;
   height: 230px;
-  object-fit: fill;
 }
 .info-card[data-panel='nickname-success'] .feedback .small-button,
 .info-card[data-panel='nickname-failure'] .feedback .small-button {
@@ -1878,10 +1896,10 @@ body[data-phase='HOME'][data-modal-open] #viewport {
   .over-content h1 {
     margin-bottom: 5px;
   }
-  .over-content .green {
+  .over-content .game-button.green {
     min-height: 48px;
     width: min(100%, 270px);
-    font-size: clamp(18px, 5.6vw, 21px);
+    font-size: clamp(18px, 6.4vw, 24px);
     white-space: nowrap;
   }
   .result-heart {
@@ -2163,11 +2181,47 @@ body[data-modal-open] #scene-back {
   min-height: 45px;
   top: -14px;
 }
+/* Fixed-height lists: the blocks never grow with the history, their rows scroll inside. */
+.info-card[data-panel='lives'] #panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.info-card[data-panel='lives'] .ledger-block {
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
+  overflow: hidden;
+}
+.info-card[data-panel='lives'] .ledger-block + .ledger-block {
+  margin-top: 0;
+}
 .info-card[data-panel='lives'] .ledger-block:first-of-type {
-  min-height: min(80.1vw, 343px);
+  flex: 0 1 min(80.1vw, 343px);
 }
 .info-card[data-panel='lives'] .ledger-block:last-of-type {
-  min-height: min(55.4vw, 237px);
+  flex: 0 1 min(55.4vw, 237px);
+}
+.ledger-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.ledger-scroll thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.ledger-block p {
+  color: #fff;
+}
+.ledger-block .error-copy {
+  color: #ff9eaa !important;
+}
+.ledger-block .small-button {
+  border: 2px solid #fff;
 }
 .info-card[data-panel='lives'] .ledger-block:last-of-type h3 {
   margin: 4px 0 12px;
@@ -2240,9 +2294,8 @@ body[data-modal-open] #scene-back {
 .info-card[data-panel='failure'] .purchase-feedback {
   top: 136px;
   left: calc(50% - 7px);
-  width: 168px;
+  width: 230px;
   height: 230px;
-  object-fit: fill;
 }
 .info-card[data-panel='success'] .feedback .small-button,
 .info-card[data-panel='failure'] .feedback .small-button {
@@ -2335,6 +2388,11 @@ body[data-modal-open] #scene-back {
     width: 52px;
     height: 52px;
   }
+  .home-sponsor {
+    position: relative;
+    top: 7.1dvh;
+    left: 23px;
+  }
 
   .home-logo {
     position: relative;
@@ -2383,6 +2441,9 @@ body[data-modal-open] #scene-back {
 @media (min-width: 400px) and (max-width: 520px) and (min-height: 700px) and (orientation: portrait) {
   .music-toggle {
     right: 30px;
+  }
+  .home-sponsor {
+    left: 30px;
   }
 
   .home-logo {

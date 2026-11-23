@@ -612,7 +612,7 @@ class Scene extends Phaser.Scene {
     this.bird.rotation = this.birdRotation = this.previousBirdRotation = -0.25;
     this.flapAge = 0;
     this.setWingPose(2);
-    audio.tone(530, 0.07);
+    audio.tone(530, 0.07, 'sine', 0.12);
     if (this.hapticsEnabled) navigator.vibrate?.(8);
   }
   private setWingPose(pose: number) {
@@ -897,8 +897,6 @@ class Scene extends Phaser.Scene {
       if (scorePair(pair, birdX, unit)) {
         this.displayScore++;
         ui.score.textContent = String(this.displayScore);
-
-        audio.tone(760, 0.12);
       }
     }
     for (let i = this.pipes.length - 1; i >= 0; i--) {

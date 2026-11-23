@@ -4,6 +4,7 @@ const MELODY = [
   65, 69, 72, 77, 74, 71, 67, 71,
 ];
 const BASS = [48, 50, 48, 55, 45, 43, 41, 43];
+const MUSIC_VOLUME = 0.05;
 function readPreference(key: string): boolean {
   try {
     return localStorage.getItem(key) !== 'off';
@@ -44,7 +45,7 @@ export class GameAudio {
         if (!Audio) return;
         this.context = new Audio();
         this.musicBus = this.context.createGain();
-        this.musicBus.gain.value = this.music ? 0.22 : 0;
+        this.musicBus.gain.value = this.music ? MUSIC_VOLUME : 0;
         this.musicBus.connect(this.context.destination);
       }
       if (this.active && this.context.state !== 'running') await this.context.resume();
@@ -70,7 +71,11 @@ export class GameAudio {
     this.music = enabled;
     savePreference('sono-music', enabled);
     if (this.context && this.musicBus)
-      this.musicBus.gain.setTargetAtTime(enabled ? 0.22 : 0, this.context.currentTime, 0.08);
+      this.musicBus.gain.setTargetAtTime(
+        enabled ? MUSIC_VOLUME : 0,
+        this.context.currentTime,
+        0.08,
+      );
     this.syncMusicTimer();
   }
   setEffects(enabled: boolean) {
