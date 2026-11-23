@@ -26,6 +26,11 @@
           >
             <img src="/assets/fine-gold/music.svg" alt="" />
           </button>
+          <img
+            class="home-sponsor"
+            src="/assets/fine-gold/sponser-finegold.png"
+            alt="Sponsored by Fine Gold"
+          />
           <h1 class="home-logo" aria-label="FLAPPY SONO">
             <img src="/assets/fine-gold/logo-flappy.webp" alt="" /><img
               src="/assets/fine-gold/logo-sono.webp"
@@ -59,7 +64,7 @@
           </div>
         </section>
         <div class="sponsor">
-          <span>SPONSORED BY</span><img src="/assets/fine-gold/sponsor.webp" alt="Fine Gold" />
+          <img src="/assets/fine-gold/sponser-finegold.png" alt="Sponsored by Fine Gold" />
         </div>
         <div id="hud" hidden>
           <div><small>ОНОО</small><strong id="score">0</strong></div>
@@ -81,7 +86,7 @@
         </div>
         <section id="game-over" class="screen" aria-label="Тоглолтын дүн" hidden>
           <div class="over-content" tabindex="0">
-            <h1>ЭЭ УНАЧИХЛАА</h1>
+            <h1>ӨӨ УНАЧИХЛАА</h1>
             <div class="over-score">ОНОО<strong id="result-score">0</strong></div>
             <div class="result-heart">
               <img src="/assets/final/hearth-icon-fee12fa6.png" alt="Үлдсэн эрх" /><strong
@@ -89,11 +94,14 @@
                 >2</strong
               >
             </div>
+            <div id="result-total" class="over-score">
+              НИЙТ<strong id="result-total-score">0</strong>
+            </div>
             <button id="retry" class="game-button green">ДАХИН ТОГЛОХ</button>
             <p id="result-reason"></p>
             <p id="result-status" role="status"></p>
             <button id="result-sync" class="small-button" hidden>ДҮНГ ДАХИН ИЛГЭЭХ</button>
-            <button id="home-button" class="text-button">НҮҮР РҮҮ</button>
+            <button id="home-button" class="game-button over-home">НҮҮР</button>
           </div>
         </section>
         <section

@@ -250,6 +250,8 @@ export class Frontend {
     const showAttempts = this.game.phase === 'READY' || this.game.phase === 'PLAYING';
     node('attempt-bar').hidden = this.service.isGuest || !showAttempts;
     node('result-attempts').parentElement!.hidden = Boolean(this.service.isGuest);
+    node('result-total-score').textContent = String(player.total);
+    node('result-total').hidden = Boolean(this.service.isGuest);
     node('guest-note').hidden = !this.service.isGuest;
     node('dev-lives').hidden = !this.service.canGrantTestLives;
     node('dev-lives').textContent = `+10 ТЕСТ АМЬ · НЭМЭЛТ ${player.lives ?? 0}`;
@@ -702,9 +704,6 @@ export class Frontend {
       rows.length
         ? `<table class="ledger-table">${showHeader ? '<thead><tr><th scope="col">ОГНОО</th><th scope="col">ТӨРӨЛ</th><th scope="col">ТОО</th></tr></thead>' : ''}<tbody>${rows.map((row) => `<tr><td>${escapeText(row.date)}</td><td>${escapeText(row.reason)}</td><td class="${row.amount > 0 ? 'credit' : 'debit'}">${row.amount > 0 ? '+' : ''}${row.amount}</td></tr>`).join('')}</tbody></table>`
         : '<p class="empty-state">Бүртгэл алга.</p>';
-    const rows = history
-      ? `<div class="ledger-heading-icon">${image('final/hearth-icon-fee12fa6.png', '', 'Амь')}</div><section class="ledger-block"><h3>АМЬ АВСАН ЖАГСААЛТ</h3>${table(history.earned)}</section><section class="ledger-block"><h3>ӨДРИЙН ҮНЭГҮЙ АМЬ</h3>${table(history.free, false)}</section>`
-      : '';
     const status = loading
       ? '<p class="empty-state" role="status">Амийн түүхийг ачаалж байна…</p>'
       : error
@@ -714,7 +713,10 @@ export class Frontend {
       !loading && (page?.nextCursor || error)
         ? `<div class="panel-actions"><button class="small-button" data-action="lives-more">${error ? 'ДАХИН АЧААЛАХ' : 'ЦААШ ҮЗЭХ'}</button></div>`
         : '';
-    return rows + status + more || '<p class="empty-state">Амийн түүх одоогоор алга.</p>';
+    // Each list keeps its size and scrolls inside; further pages load at the end of the earned list.
+    if (history)
+      return `<div class="ledger-heading-icon">${image('final/hearth-icon-fee12fa6.png', '', 'Амь')}</div><section class="ledger-block"><h3>АМЬ АВСАН ЖАГСААЛТ</h3><div class="ledger-scroll">${table(history.earned)}${status}${more}</div></section><section class="ledger-block"><h3>ӨДРИЙН ҮНЭГҮЙ АМЬ</h3><div class="ledger-scroll">${table(history.free, false)}</div></section>`;
+    return status + more || '<p class="empty-state">Амийн түүх одоогоор алга.</p>';
   }
   private rulesContent() {
     if (this.service.isGuest)
@@ -758,6 +760,10 @@ export class Frontend {
     }
     this.card.querySelector(':scope > .stats-tabs')?.remove();
     const scrollTop = resetScroll ? 0 : this.content.scrollTop;
+    const listScroll = Array.from(
+      this.content.querySelectorAll<HTMLElement>('.ledger-scroll'),
+      (list) => (resetScroll ? 0 : list.scrollTop),
+    );
     const active =
       !resetScroll && this.content.contains(document.activeElement)
         ? (document.activeElement as HTMLElement)
@@ -924,6 +930,9 @@ export class Frontend {
         button.disabled = true;
       });
     this.content.scrollTop = scrollTop;
+    this.content.querySelectorAll<HTMLElement>('.ledger-scroll').forEach((list, index) => {
+      list.scrollTop = listScroll[index] ?? 0;
+    });
     if (active) {
       const replacement = Array.from(
         this.card.querySelectorAll<HTMLElement>('[id], [data-action]'),
