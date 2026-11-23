@@ -82,7 +82,9 @@ const ulaanbaatarDate = new Intl.DateTimeFormat('mn-MN', {
   month: '2-digit',
   day: '2-digit',
 });
-const RUN_LIMIT_MS = 15 * 60 * 1000;
+// The server ends a session 15 minutes after it started. Game over comes 30 s sooner, so the finish
+// still arrives in time over a slow network.
+const RUN_LIMIT_MS = 15 * 60 * 1000 - 30 * 1000;
 type Start = {
   sessionId: string;
   seed: string;
@@ -93,8 +95,11 @@ type Start = {
 type Options = {
   client: ApiClient;
   testLivesEnabled?: boolean;
+  /** Resolves with the host's outcome: COMPLETED, CANCELLED, FAILED or UNKNOWN. */
   payWithPoints?: (request: { orderId: string }) => Promise<unknown>;
   paymentAvailable?: () => boolean;
+  /** The SONO point balance from the host, or null when it cannot tell. */
+  pointBalance?: () => Promise<number | null>;
   now?: () => number;
 };
 
@@ -159,6 +164,8 @@ export class ApiMiniappService implements MiniappService {
   private me: LeaderboardRow | null = null;
   private boardReadAt = 0;
   private refreshTask: Promise<void> | null = null;
+  private refreshedAt = 0;
+  private pointsTask: Promise<void> | null = null;
   private priceTask: Promise<void> | null = null;
   private startTask: Promise<string> | null = null;
   private startKey = '';
@@ -259,6 +266,7 @@ export class ApiMiniappService implements MiniappService {
           this.invalidateBirds();
           if (hadCatalogAttempt) this.player.selectedBird = 'pilot';
         }
+        this.refreshedAt = Date.now();
         if (!this.price) void this.refreshPrice();
         if (!this.catalogAttempted) void this.refreshBirds().catch(() => undefined);
       })().finally(() => {
@@ -266,6 +274,36 @@ export class ApiMiniappService implements MiniappService {
       });
     }
     return this.refreshTask;
+  }
+  /**
+   * Start and finish answers keep the play rights and totals current, so a new game needs no profile
+   * read unless it is old or something would stop the game (the server checks again at start).
+   */
+  refreshIfStale(maxAgeMs: number) {
+    const { attempts, nicknameRequired, tournament } = this.player;
+    const tournamentOver = !tournament || Date.parse(tournament.endsAt) <= Date.now();
+    if (
+      !this.refreshedAt ||
+      Date.now() - this.refreshedAt >= maxAgeMs ||
+      attempts <= 0 ||
+      nicknameRequired ||
+      tournamentOver
+    )
+      return this.refresh();
+    return Promise.resolve();
+  }
+  /** Reads the point balance from the host; the backend never sees it. */
+  refreshPoints() {
+    if (!this.options.pointBalance) return Promise.resolve();
+    if (!this.pointsTask)
+      this.pointsTask = this.options
+        .pointBalance()
+        .then((points) => {
+          if (points !== null) this.player.points = points;
+        })
+        .catch(() => undefined)
+        .finally(() => (this.pointsTask = null));
+    return this.pointsTask;
   }
   refreshPrice() {
     if (this.price) return Promise.resolve();
@@ -374,6 +412,7 @@ export class ApiMiniappService implements MiniappService {
         score: number;
         bestScore: number;
         rejectReason?: string;
+        totalScore?: number | null;
         newlyUnlocked?: string[];
       }>('POST', `/api/v1/games/${encodeURIComponent(runId)}/finish`, {
         score: finish.score,
@@ -411,9 +450,13 @@ export class ApiMiniappService implements MiniappService {
     this.finishes.delete(runId);
     if (this.active?.id === runId) this.active = null;
     this.boardReadAt = 0;
-    this.invalidateBirds();
-    // A successful finish stays final even if the subsequent profile read fails.
-    await this.refresh().catch(() => undefined);
+    // The answer carries the new totals, so no profile read is needed after a game.
+    if (Number.isSafeInteger(response.bestScore) && response.bestScore >= 0)
+      this.player.best = response.bestScore;
+    if (Number.isSafeInteger(response.totalScore) && response.totalScore! >= 0)
+      this.player.total = response.totalScore!;
+    // Unlocks follow the tournament total; the catalog changes only when this game unlocked a bird.
+    if (result.newlyUnlocked?.length) this.invalidateBirds();
     return { ...result };
   }
   async loadLifeHistory(cursor?: string): Promise<LifeHistoryPage> {
@@ -591,8 +634,25 @@ export class ApiMiniappService implements MiniappService {
     if (!this.options.payWithPoints) throw new ApiError('HOST_PAYMENT_REQUIRED');
     const order = await this.checkOrder();
     if (order.status !== 'PENDING') return;
-    await this.options.payWithPoints({ orderId: order.orderId });
+    const outcome = await this.options.payWithPoints({ orderId: order.orderId });
     this.paymentOpened.add(order.orderId);
+    // The host did not debit: leave the order to expire on the server and let the player start over.
+    // Lives still arrive if the host debits after all, because only the server's callback credits them.
+    if (outcome === 'CANCELLED' || outcome === 'FAILED') {
+      this.abandonOrder();
+      throw new ApiError(`PAYMENT_${outcome}`);
+    }
+  }
+  /** Forgets the pending order on this device only; the server lets it expire. */
+  abandonOrder() {
+    const orderId = this.pendingOrder?.orderId;
+    if (!orderId) return;
+    this.pendingOrder = undefined;
+    for (const [key, order] of this.orders)
+      if (order.value?.orderId === orderId) this.orders.delete(key);
+    this.paymentOpened.delete(orderId);
+    this.saveOrderReference();
+    void this.refreshPoints();
   }
   checkOrder(): Promise<LifeOrder> {
     if (this.orderCheckTask) return this.orderCheckTask;
@@ -616,13 +676,22 @@ export class ApiMiniappService implements MiniappService {
       });
     if (!validOrder(response) || response.orderId !== previous.orderId)
       throw new ApiError('INVALID_RESPONSE');
+    if (this.pendingOrder?.orderId !== previous.orderId) {
+      // Abandoned meanwhile; a late payment still credits lives, so show them.
+      if (response.status === 'PAID') await this.refresh();
+      return { ...response };
+    }
     this.pendingOrder =
       previous.status !== 'PENDING' && response.status === 'PENDING' ? previous : response;
     for (const order of this.orders.values())
       if (order.value?.orderId === this.pendingOrder.orderId) order.value = this.pendingOrder;
     this.saveOrderReference();
-    if (this.pendingOrder.status === 'PAID') await this.refresh();
-    return { ...this.pendingOrder };
+    const settled = { ...this.pendingOrder };
+    if (settled.status === 'PAID') {
+      await this.refresh();
+      void this.refreshPoints();
+    }
+    return settled;
   }
   private saveOrderReference() {
     try {
@@ -750,8 +819,5 @@ export class ApiMiniappService implements MiniappService {
       }
       throw error;
     }
-  }
-  async checkConnection() {
-    await this.options.client.request('GET', '/api/v1/me');
   }
 }

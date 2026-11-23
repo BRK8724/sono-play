@@ -96,21 +96,6 @@ function show(phase: Phase) {
   document.body.dataset.phase = phase;
   frontend?.refresh();
 }
-async function playAllowed() {
-  if (service.isGuest) return true;
-  if (service.checkConnection) {
-    try {
-      await service.checkConnection();
-      ui.offline.hidden = true;
-      return true;
-    } catch {
-      ui.offline.hidden = false;
-      return false;
-    }
-  }
-  ui.offline.hidden = false;
-  return false;
-}
 class Scene extends Phaser.Scene {
   phase: Phase = 'HOME';
   isReady = false;
@@ -1070,16 +1055,12 @@ window.addEventListener('pageshow', () => {
   scene.setRenderingVisible(!document.hidden);
   scheduleResize();
 });
-function checkRunningConnection() {
-  const runId = scene.runId;
-  void playAllowed().then((ok) => {
-    // A delayed response from a finished flight must not terminate its successor.
-    if (!ok && runId && scene.runId === runId) scene.terminate('CONNECTION_LOST');
-    if (ok && scene.resultPending) void scene.retryResult();
-  });
-}
-window.addEventListener('offline', checkRunningConnection);
-window.addEventListener('online', checkRunningConnection);
-window.setInterval(() => {
-  if (scene.phase === 'PLAYING' && !document.hidden) checkRunningConnection();
-}, 30000);
+// A flight needs no connection: the result is sent at game over and again once the network is back,
+// and the server accepts a late result. So losing the connection only shows a notice.
+window.addEventListener('offline', () => {
+  if (!service.isGuest) ui.offline.hidden = false;
+});
+window.addEventListener('online', () => {
+  ui.offline.hidden = true;
+  if (scene.resultPending) void scene.retryResult();
+});

@@ -91,7 +91,7 @@ p {
   height: 100dvh;
   overflow: hidden;
   padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
-  background: #273955 url('/assets/sono/menu-background.webp') center / cover no-repeat;
+  background: #4f96e6 url('/assets/sono/menu-background-winter.webp') center / cover no-repeat;
 }
 #mock-banner {
   position: absolute;
@@ -131,11 +131,6 @@ body:not([data-phase='HOME']) #mock-banner {
 }
 body[data-phase='PLAYING'] #mock-banner {
   display: none;
-}
-@media (max-width: 520px) and (max-height: 960px), (max-width: 1024px) and (max-height: 600px) {
-  #viewport {
-    background-image: url('/assets/sono/menu-background-mobile.webp');
-  }
 }
 #shell,
 #sky,
@@ -2534,7 +2529,9 @@ body[data-modal-open] #scene-back {
 .info-card .gift-video-description {
   margin: 0;
   color: #646077;
-  font: 500 13px/1.6 Nunito, sans-serif;
+  font:
+    500 13px/1.6 Nunito,
+    sans-serif;
   text-align: left;
 }
 .gift-back-button {
@@ -2543,6 +2540,8 @@ body[data-modal-open] #scene-back {
   background: none;
   padding: 8px 12px;
   color: var(--purple);
-  font: 800 12px Nunito, sans-serif;
+  font:
+    800 12px Nunito,
+    sans-serif;
   cursor: pointer;
 }

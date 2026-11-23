@@ -499,7 +499,17 @@ export function createLocalMockService(): MiniappService {
     client,
     testLivesEnabled: true,
     paymentAvailable: () => true,
-    payWithPoints: ({ orderId }) => api.confirmOrder(orderId),
+    // Answers like the SONO host: a refused debit is FAILED, not an exception.
+    payWithPoints: async ({ orderId }) => {
+      try {
+        await api.confirmOrder(orderId);
+        return 'COMPLETED';
+      } catch (error) {
+        if (error instanceof ApiError && error.code === 'INSUFFICIENT_POINTS') return 'FAILED';
+        throw error;
+      }
+    },
+    pointBalance: async () => api.points,
   });
   return Object.assign(service, {
     isMock: true as const,

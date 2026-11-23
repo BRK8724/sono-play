@@ -15,7 +15,7 @@ For a local UI and flow preview without the API server, run `VITE_LOCAL_MOCK_API
 
 ## Integration
 
-The Flutter host supplies `window.SonoBridge.getLaunchToken()` and, when native payment confirmation is enabled, `window.SonoBridge.payWithPoints({ orderId })`. For the **Бэлэг харах** and **Заавар үзэх** buttons, Flutter must also supply `window.SonoBridge.openExternalUrl({ url })` and open the approved URL outside the game WebView. The web client does not navigate the game WebView away if this bridge method is missing. In an ordinary browser preview, these buttons open a new tab.
+The SONO app provides `window.SonoBridge.call(method, params)` with `getLaunchToken`, `payWithPoints`, `getPointBalance` and `openExternalUrl`; see [the host bridge](INTEGRATION.md#host-bridge). The web client does not navigate the game WebView away if a method is missing. In an ordinary browser preview, the gift and guide buttons open a new tab.
 
 The web client starts a run through the Player API, uses the issued seed and game config, then submits the run result for server verification. It never grants lives or treats the client score as verified.
 
