@@ -245,8 +245,8 @@ export class Frontend {
     node('result-attempts').parentElement?.classList.toggle('empty', player.attempts === 0);
     node('retry').textContent =
       this.service.isGuest || player.attempts ? 'ДАХИН ТОГЛОХ' : 'АМЬ АВАХ';
-    node('best-label').textContent = 'НИЙТ';
-    node('best').textContent = String(player.total);
+    node('best-label').textContent = 'ӨНДӨР';
+    node('best').textContent = String(player.best);
     const showAttempts = this.game.phase === 'READY' || this.game.phase === 'PLAYING';
     node('attempt-bar').hidden = this.service.isGuest || !showAttempts;
     node('result-attempts').parentElement!.hidden = Boolean(this.service.isGuest);
