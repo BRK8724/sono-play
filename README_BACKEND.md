@@ -4,6 +4,8 @@ For a standalone, removable server-free preview, see [local mock mode](docs/LOCA
 
 The frontend follows the Player API contract in `docs/api/flappy-player-api.json` and the requests in `docs/api/flappy-player-api.postman_collection.json`, both copied from the backend repository (`docs/openapi/`, `docs/postman/`); refresh them after every API change. `POST /api/v1/dev/lives` exists only in the backend's mock profile. Calls are wired through `src/services/ApiMiniappService.ts`; `src/services/ApiClient.ts` handles authenticated requests and idempotency keys; `src/services/HostBridge.ts` talks to the SONO app ([host bridge](INTEGRATION.md#host-bridge)). The browser app does not store core credentials.
 
+For a staging host, the `Dockerfile` builds this client into an nginx image that serves `/sono-play/` and proxies `/api/v1/` to the backend on the same origin (`deploy/nginx.compose.conf.template`); the backend repository's `deploy/staging/docker-compose.yml` runs it together with the API, PostgreSQL and Redis.
+
 To develop against a local backend, run it in its mock profile (`./gradlew bootRun` in the backend repository, port 8080) and `npm run dev`: `.env.development` sets `VITE_API_TEST_MOCK_AUTH=1`, so the page logs in with mock launch tokens and shows a `+10 ТЕСТ АМЬ` button.
 
 The stats screen fetches `GET /api/v1/leaderboard?limit=10` for the total tab, `GET /api/v1/leaderboard/daily?limit=10` for today, and `GET /api/v1/leaderboard/days` for the calendar. Selecting a calendar date fetches `GET /api/v1/leaderboard/daily?day=YYYY-MM-DD&limit=10`. Score rows with `reachedAt` display that time in Asia/Ulaanbaatar; rows without it display only the API's day.
