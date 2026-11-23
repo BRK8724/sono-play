@@ -740,7 +740,7 @@ export class Frontend {
       .map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`)
       .join('');
 
-    return `<div class="rules-heading-icon">${image('final/hearth-icon-fee12fa6.png')}</div><section class="rules-block purple"><h3>АМЬ ЦУГЛУУЛАХ АРГА</h3>${lifeRows}${purchases}</section>
+    return `<section class="rules-block purple"><div class="rules-heading-icon">${image('final/hearth-icon-fee12fa6.png')}</div><h3>АМЬ ЦУГЛУУЛАХ АРГА</h3>${lifeRows}${purchases}</section>
       <section class="rules-block white">${medal(1, 'rule-medal')}<h3>НИЙТ ӨДРИЙН ЯЛАГЧ ТОДРУУЛАХ</h3><p>Тоглогчид өөрсдийн тоглосон нийт өдрийн нийлбэр оноогоор өрсөлдөж, эхний 5 байр шагналтай.</p></section>
       <section class="rules-block white">${image('final/gold-sono-871113b4.png', 'rule-medal')}<h3>НЭГ ӨДРИЙН ЯЛАГЧ ТОДРУУЛАХ</h3><p>Тоглогчид өөрсдийн тоглосон 1 өдрийн нийлбэр оноогоор өрсөлдөж, эхний 1 байр шагналтай.</p></section>
       <section class="rules-block red">${image('fine-gold/attention.webp', 'rule-warning')}<p>Өдөрт олгогдох 3 эрх ашиглагдаагүй тохиолдолд дараа өдөрт шилжихгүй.</p></section>
@@ -749,7 +749,7 @@ export class Frontend {
         <p>Өдрийн үнэгүй эрхийг эхэлж зарцуулна. Олсон эрх тэмцээн дуустал хүчинтэй.</p>
         <p>Нэг хос хоолойг амжилттай давахад +1 оноо нэмэгдэнэ. Оноо өсөхөд тоглолтын хурд шатлалтай нэмэгдэнэ. Нэг тоглолт 15 минут хүртэл үргэлжилнэ. Апп арын горимд шилжвэл тоглолт дуусна.</p>
         ${skins}
-        <p>Улаанбаатарын цагаар өдрийн зураг 07:00–18:00, шөнийн зураг 18:00–07:00 харагдана.</p>
+        <p>Улаанбаатарын цагаар өдрийн зураг 08:00–16:00, оройн зураг 16:00–19:00, шөнийн зураг 19:00–08:00 харагдана.</p>
       </details>`;
   }
   private render(resetScroll = false) {

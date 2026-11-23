@@ -1434,10 +1434,26 @@ body[data-phase='HOME'][data-modal-open] #viewport {
 .rules-block.purple {
   background: #7964ee;
 }
+/*
+ * Each badge sits half outside its card. The card's top margin keeps the badge clear of the card
+ * above, its top padding keeps the heading 12px below the badge.
+ */
+.rules-block.purple {
+  margin-top: 30px;
+  padding-top: 35px;
+}
+.rules-block.white {
+  margin-top: 42px;
+  padding-top: 30px;
+}
+.rules-block.red {
+  margin-top: 30px;
+  padding-top: 22px;
+}
 .rules-heading-icon {
   position: absolute;
   z-index: 2;
-  top: 46px;
+  top: -23px;
   left: calc(50% - 23px);
   width: 46px;
   height: 46px;
@@ -1499,7 +1515,9 @@ body[data-phase='HOME'][data-modal-open] #viewport {
   margin: 6px 0;
 }
 .rules-block strong {
+  flex-shrink: 0;
   font-size: 12px;
+  white-space: nowrap;
 }
 .rule-details {
   font:
@@ -2510,7 +2528,6 @@ body[data-modal-open] #scene-back {
 
   .info-card[data-panel='rules'] .rules-block.purple {
     min-height: 20.1dvh;
-    margin: 14px 0 40px;
   }
 
   .info-card[data-panel='rules'] .rules-block.purple > div {
@@ -2522,11 +2539,6 @@ body[data-modal-open] #scene-back {
 
   .info-card[data-panel='rules'] .rules-block.white {
     min-height: 13.5dvh;
-    margin: 0 0 34px;
-  }
-
-  .info-card[data-panel='rules'] .rules-block.white + .rules-block.white {
-    margin-bottom: 14px;
   }
 
   .info-card[data-panel='rules'] .rules-block.red {
