@@ -1,10 +1,16 @@
-/** Original procedural flight theme: no downloaded tracks or network requests. */
-const MELODY = [
-  72, 76, 79, 76, 74, 77, 81, 77, 72, 76, 79, 84, 83, 79, 76, 74, 69, 72, 76, 72, 67, 71, 74, 71,
-  65, 69, 72, 77, 74, 71, 67, 71,
-];
-const BASS = [48, 50, 48, 55, 45, 43, 41, 43];
-const MUSIC_VOLUME = 0.05;
+import { assetUrl } from '../assets';
+
+/** Recorded effects are decoded once after the first tap; the flap and crash stay synthesized. */
+const EFFECTS = {
+  click: { file: 'assets/sono/audio/click.mp3', volume: 0.4 },
+  pipe: { file: 'assets/sono/audio/pipe-pass.mp3', volume: 0.2 },
+  getBird: { file: 'assets/sono/audio/get-bird.mp3', volume: 0.4 },
+} as const;
+export type EffectName = keyof typeof EFFECTS;
+/** AAC 64 kbps (~1 MB, from the 3 MB background-music.mp3 kept as source), streamed rather than decoded. */
+const MUSIC_FILE = 'assets/sono/audio/background-music.m4a';
+const MUSIC_VOLUME = 0.03;
+
 function readPreference(key: string): boolean {
   try {
     return localStorage.getItem(key) !== 'off';
@@ -25,10 +31,10 @@ function savePreference(key: string, enabled: boolean): void {
 export class GameAudio {
   private context?: AudioContext;
   private musicBus?: GainNode;
+  private musicElement?: HTMLAudioElement;
   private crashBuffer?: AudioBuffer;
-  private timer?: ReturnType<typeof setInterval>;
-  private nextNote = 0;
-  private beat = 0;
+  private buffers = new Map<EffectName, AudioBuffer>();
+  private effectsTask?: Promise<void>;
   private active = true;
   music = readPreference('sono-music');
   effects = readPreference('sono-sound');
@@ -38,18 +44,20 @@ export class GameAudio {
   async unlock() {
     try {
       if (!this.context) {
-        const Audio =
+        const Context =
           window.AudioContext ??
           (window as typeof window & { webkitAudioContext?: typeof AudioContext })
             .webkitAudioContext;
-        if (!Audio) return;
-        this.context = new Audio();
+        if (!Context) return;
+        this.context = new Context();
         this.musicBus = this.context.createGain();
-        this.musicBus.gain.value = this.music ? MUSIC_VOLUME : 0;
+        this.musicBus.gain.value = MUSIC_VOLUME;
         this.musicBus.connect(this.context.destination);
       }
+      // iOS starts a media element only inside the gesture, so this runs before any await.
+      this.syncMusic();
       if (this.active && this.context.state !== 'running') await this.context.resume();
-      this.syncMusicTimer();
+      this.effectsTask ??= this.loadEffects(this.context);
     } catch {
       /* A host may disallow audio. Gameplay remains available. */
     }
@@ -58,41 +66,38 @@ export class GameAudio {
     if (this.active === active) return;
     this.active = active;
     if (!active) void this.context?.suspend().catch(() => {});
-    else {
-      this.nextNote = (this.context?.currentTime ?? 0) + 0.05;
-      void this.context?.resume().then(
-        () => this.syncMusicTimer(),
-        () => {},
-      );
-    }
-    this.syncMusicTimer();
+    else void this.context?.resume().catch(() => {});
+    this.syncMusic();
   }
   setMusic(enabled: boolean) {
     this.music = enabled;
     savePreference('sono-music', enabled);
-    if (this.context && this.musicBus)
-      this.musicBus.gain.setTargetAtTime(
-        enabled ? MUSIC_VOLUME : 0,
-        this.context.currentTime,
-        0.08,
-      );
-    this.syncMusicTimer();
+    this.syncMusic();
   }
   setEffects(enabled: boolean) {
     this.effects = enabled;
     savePreference('sono-sound', enabled);
   }
-  tone(
-    frequency: number,
-    duration = 0.1,
-    wave: OscillatorType = 'sine',
-    volume = 0.07,
-    when?: number,
-    bus?: AudioNode,
-  ) {
+  /** Plays a recorded effect; silent until the files have loaded after the first tap. */
+  play(name: EffectName) {
     const c = this.context;
-    if (c?.state !== 'running' || !this.active || (!bus && !this.effects)) return;
-    const t = when ?? c.currentTime;
+    const buffer = this.buffers.get(name);
+    if (!buffer || c?.state !== 'running' || !this.active || !this.effects) return;
+    const source = c.createBufferSource();
+    const gain = c.createGain();
+    source.buffer = buffer;
+    gain.gain.value = EFFECTS[name].volume;
+    source.connect(gain).connect(c.destination);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+    };
+    source.start();
+  }
+  tone(frequency: number, duration = 0.1, wave: OscillatorType = 'sine', volume = 0.07) {
+    const c = this.context;
+    if (c?.state !== 'running' || !this.active || !this.effects) return;
+    const t = c.currentTime;
     const oscillator = c.createOscillator();
     const gain = c.createGain();
     oscillator.type = wave;
@@ -100,7 +105,7 @@ export class GameAudio {
     gain.gain.setValueAtTime(0.001, t);
     gain.gain.exponentialRampToValueAtTime(volume, t + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-    oscillator.connect(gain).connect(bus ?? c.destination);
+    oscillator.connect(gain).connect(c.destination);
     oscillator.onended = () => {
       oscillator.disconnect();
       gain.disconnect();
@@ -108,40 +113,41 @@ export class GameAudio {
     oscillator.start(t);
     oscillator.stop(t + duration + 0.02);
   }
-  private syncMusicTimer() {
-    const playing = this.context?.state === 'running' && this.active && this.music;
-    if (playing && this.timer === undefined) this.timer = setInterval(() => this.schedule(), 100);
-    else if (!playing) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-    }
+  private async loadEffects(c: AudioContext) {
+    await Promise.all(
+      (Object.keys(EFFECTS) as EffectName[]).map(async (name) => {
+        try {
+          const response = await fetch(assetUrl(EFFECTS[name].file));
+          if (!response.ok) return;
+          const data = await response.arrayBuffer();
+          // The callback form also works in WebViews older than the promise form.
+          const buffer = await new Promise<AudioBuffer>((resolve, reject) =>
+            c.decodeAudioData(data, resolve, reject),
+          );
+          this.buffers.set(name, buffer);
+        } catch {
+          /* A missing effect stays silent; gameplay is unaffected. */
+        }
+      }),
+    );
   }
-  private schedule() {
-    const c = this.context;
-    if (!c || c.state !== 'running' || !this.active || !this.music) return;
-    if (this.nextNote < c.currentTime) this.nextNote = c.currentTime + 0.03;
-    while (this.nextNote < c.currentTime + 0.2) {
-      const note = MELODY[this.beat % MELODY.length];
-      this.tone(
-        440 * 2 ** ((note - 69) / 12),
-        0.23,
-        'triangle',
-        0.12,
-        this.nextNote,
-        this.musicBus,
-      );
-      if (this.beat % 4 === 0)
-        this.tone(
-          440 * 2 ** ((BASS[Math.floor(this.beat / 4) % BASS.length] - 69) / 12),
-          0.7,
-          'sine',
-          0.18,
-          this.nextNote,
-          this.musicBus,
-        );
-      this.beat++;
-      this.nextNote += 0.3;
+  private syncMusic() {
+    if (!this.context || !this.musicBus) return;
+    if (!this.music || !this.active) {
+      this.musicElement?.pause();
+      return;
     }
+    if (!this.musicElement) {
+      const element = document.createElement('audio');
+      element.src = assetUrl(MUSIC_FILE);
+      element.loop = true;
+      element.preload = 'auto';
+      // Routed through Web Audio because iOS ignores HTMLMediaElement.volume.
+      this.context.createMediaElementSource(element).connect(this.musicBus);
+      this.musicElement = element;
+    }
+    // A refused start is retried by the next tap's unlock().
+    void this.musicElement.play().catch(() => {});
   }
   crash() {
     const c = this.context;
@@ -171,8 +177,8 @@ export class GameAudio {
     this.tone(75, 0.45, 'triangle', 0.18);
   }
   destroy() {
-    clearInterval(this.timer);
-    this.timer = undefined;
+    this.musicElement?.pause();
+    this.musicElement?.removeAttribute('src');
     void this.context?.close();
   }
 }

@@ -201,6 +201,11 @@ export class Frontend {
         this.action(target.dataset.action!, target.dataset.value);
     });
     document.addEventListener('keydown', (event) => this.onKey(event));
+    // Every enabled button clicks, including ones re-rendered inside panels.
+    document.addEventListener('click', (event) => {
+      if ((event.target as Element | null)?.closest?.('button:not(:disabled)'))
+        this.audio.play('click');
+    });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.navigationVersion++;
     });
@@ -341,6 +346,7 @@ export class Frontend {
     this.unlockedBirdNames = codes.map(
       (code) => this.service.birdCatalog?.find((bird) => bird.code === code)?.name ?? code,
     );
+    this.audio.play('getBird');
     if (this.game.phase === 'GAME_OVER' && !this.panel) this.open('bird-unlocked');
     else this.notify(`Шинэ SONO нээгдлээ: ${this.unlockedBirdNames.join(', ')}`);
   }

@@ -930,15 +930,8 @@ body[data-phase='HOME'][data-modal-open] #viewport {
 }
 .info-card[data-panel='store'] {
   width: min(100%, 309px);
-  height: min(224px, calc(100dvh - 48px));
-  padding: 52px 24px 16px;
+  padding: 52px 20px 22px;
   border-radius: 28px;
-}
-.info-card[data-panel='store']:has(.skin-card.locked),
-.info-card[data-panel='store']:has(.catalog-section .panel-actions) {
-  height: min(244px, calc(100dvh - 48px));
-  padding-top: 46px;
-  transform: translateY(2px);
 }
 .info-card[data-panel='store'] h2 {
   width: 154px;
@@ -946,54 +939,50 @@ body[data-phase='HOME'][data-modal-open] #viewport {
   top: -15px;
   font-size: 17px;
 }
+/* Heading, card and arrows share one centre line at every width. */
 .catalog-section h3 {
-  margin: 14px 0 10px;
+  margin: 0 0 12px;
   font-size: 17px;
-  text-align: left;
-  padding-left: 49px;
+  text-align: center;
 }
 .info-card[data-panel='store'] .carousel {
-  grid-template-columns: 44px 1fr 44px;
-  gap: 6px;
+  grid-template-columns: 44px auto 44px;
+  justify-content: center;
+  gap: 12px;
 }
 .info-card[data-panel='store'] .skin-card {
-  width: 71px;
-  height: 88px;
-  padding: 5px 2px;
-  border-radius: 11px;
+  width: 104px;
+  height: 128px;
+  padding: 7px 4px;
+  border-radius: 12px;
 }
 .info-card[data-panel='store'] .skin-name {
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.1;
 }
 .info-card[data-panel='store'] .catalog-image {
   display: block;
-  width: 52px;
-  height: 52px;
-  margin: 3px auto 0;
+  width: 80px;
+  height: 80px;
+  margin: 6px auto 0;
 }
 .info-card[data-panel='store'] .skin-lock {
-  transform: scale(0.8);
-  top: 43px;
+  top: 66px;
 }
 .info-card[data-panel='store'] .skin-threshold {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 15px;
 }
 .info-card[data-panel='store'] .panel-actions {
-  margin-top: 8px;
+  margin-top: 12px;
 }
 .info-card[data-panel='store'] .panel-actions .small-button {
-  min-height: 33px;
+  min-height: 36px;
 }
 .info-card[data-panel='store'] .arrow {
+  min-width: 44px;
+  font-size: 28px;
   text-shadow: 0 2px 4px #5140b485;
-}
-.info-card[data-panel='store'] .arrow:first-child {
-  transform: translate(21px, 29px);
-}
-.info-card[data-panel='store'] .arrow:last-child {
-  transform: translate(12px, -15px);
 }
 .stats-tabs {
   display: flex;

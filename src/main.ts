@@ -897,6 +897,7 @@ class Scene extends Phaser.Scene {
       if (scorePair(pair, birdX, unit)) {
         this.displayScore++;
         ui.score.textContent = String(this.displayScore);
+        audio.play('pipe');
       }
     }
     for (let i = this.pipes.length - 1; i >= 0; i--) {
