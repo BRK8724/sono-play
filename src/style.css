@@ -1544,20 +1544,6 @@ body[data-phase='HOME'][data-modal-open] #viewport {
   font-size: 12px;
   white-space: nowrap;
 }
-.rule-details {
-  font:
-    800 13px/1.5 Nunito,
-    sans-serif;
-}
-.rule-details summary {
-  cursor: pointer;
-  min-height: 44px;
-  padding: 12px 0;
-}
-.rule-details p {
-  margin-top: 10px;
-  font-size: 13px;
-}
 .buy-avatar {
   width: 95px;
   height: 115px;

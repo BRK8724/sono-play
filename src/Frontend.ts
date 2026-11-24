@@ -729,13 +729,6 @@ export class Frontend {
       return `<section class="rules-block yellow"><h3>ЗОЧНЫ ТОГЛОЛТ</h3><p>Нэвтрэхгүйгээр шууд тоглоно. Нэг хос хоолойг давах бүрд 1 оноо авна. Оноо өсөхөд хурд нэмэгдэнэ. Нэг тоглолт 15 минут хүртэл үргэлжилнэ.</p><p>Оноо зөвхөн энэ нээлтэд хадгалагдана. Серверийн чансаа, шагнал, амь болон худалдан авалтад тооцогдохгүй. Загваруудыг энд түр сонгон туршиж болно.</p></section>`;
     const price = this.service.price?.pointsPerLife;
     const purchases = `<div><span>${price === undefined ? '—' : price.toLocaleString('mn-MN')} SONO POINT</span><strong>+1</strong></div>`;
-    const thresholds = this.service.birdCatalog
-      ?.filter((bird) => bird.unlockScore > 0)
-      .map((bird) => `${escapeText(bird.name)} — ${bird.unlockScore.toLocaleString('mn-MN')}`)
-      .join(', ');
-    const skins = thresholds
-      ? `<p>Загвар нээхэд шаардагдах тэмцээний нийт оноо · ${thresholds}</p>`
-      : '<p>Загварууд тэмцээний нийт оноогоор нээгдэнэ. Босгыг Загвар хэсгээс харна уу.</p>';
     const lifeRows = earnedLifeRules
       .map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`)
       .join('');
@@ -743,14 +736,7 @@ export class Frontend {
     return `<section class="rules-block purple"><div class="rules-heading-icon">${image('final/hearth-icon-fee12fa6.png')}</div><h3>АМЬ ЦУГЛУУЛАХ АРГА</h3>${lifeRows}${purchases}</section>
       <section class="rules-block white">${medal(1, 'rule-medal')}<h3>НИЙТ ӨДРИЙН ЯЛАГЧ ТОДРУУЛАХ</h3><p>Тоглогчид өөрсдийн тоглосон нийт өдрийн нийлбэр оноогоор өрсөлдөж, эхний 5 байр шагналтай.</p></section>
       <section class="rules-block white">${image('final/gold-sono-871113b4.png', 'rule-medal')}<h3>НЭГ ӨДРИЙН ЯЛАГЧ ТОДРУУЛАХ</h3><p>Тоглогчид өөрсдийн тоглосон 1 өдрийн нийлбэр оноогоор өрсөлдөж, эхний 1 байр шагналтай.</p></section>
-      <section class="rules-block red">${image('fine-gold/attention.webp', 'rule-warning')}<p>Өдөрт олгогдох 3 эрх ашиглагдаагүй тохиолдолд дараа өдөрт шилжихгүй.</p></section>
-      <details class="rule-details"><summary>ДЭЛГЭРЭНГҮЙ ДҮРЭМ</summary>
-        <p>Хуваарьт төлбөрийг бүтэн төлсөн үед эрх олгоно. Эрт төлөлтийн +10 нь хугацаандаа төлөлтийн +10-ыг орлоно. Нэг хуваарьт нэг удаа, зээл бүрд тусад нь олгоно. Өдрийн дээд хязгааргүй.</p>
-        <p>Өдрийн үнэгүй эрхийг эхэлж зарцуулна. Олсон эрх тэмцээн дуустал хүчинтэй.</p>
-        <p>Нэг хос хоолойг амжилттай давахад +1 оноо нэмэгдэнэ. Оноо өсөхөд тоглолтын хурд шатлалтай нэмэгдэнэ. Нэг тоглолт 15 минут хүртэл үргэлжилнэ. Апп арын горимд шилжвэл тоглолт дуусна.</p>
-        ${skins}
-        <p>Улаанбаатарын цагаар өдрийн зураг 08:00–16:00, оройн зураг 16:00–19:00, шөнийн зураг 19:00–08:00 харагдана.</p>
-      </details>`;
+      <section class="rules-block red">${image('fine-gold/attention.webp', 'rule-warning')}<p>Өдөрт олгогдох 3 эрх ашиглагдаагүй тохиолдолд дараа өдөрт шилжихгүй.</p></section>`;
   }
   private render(resetScroll = false) {
     if (!this.panel) return;
