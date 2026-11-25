@@ -3,7 +3,7 @@ import { GameAudio } from './audio/GameAudio';
 import { assetUrl } from './assets';
 import { ApiError } from './services/ApiClient';
 import { errorMessage, isTransient, NICKNAME_RULES, validNickname } from './services/errors';
-import { openExternalUrl } from './services/HostBridge';
+import { GIFT_PRODUCTS_URL, GUIDE_URL, openExternalUrl } from './services/HostBridge';
 import type { RunEndReason } from './rules';
 
 import type {
@@ -36,7 +36,6 @@ type Panel =
   | 'store'
   | 'stats'
   | 'gifts'
-  | 'gift-video'
   | 'buy'
   | 'confirmation'
   | 'success'
@@ -97,7 +96,6 @@ const titles: Record<Panel, string> = {
   store: 'ЗАГВАР',
   stats: 'ЯЛАГЧИД',
   gifts: 'БЭЛЭГ',
-  'gift-video': 'БЭЛЭГ ХАРАХ',
   buy: 'АМЬ АВАХ',
   confirmation: 'SONO',
   success: 'АМЖИЛТТАЙ',
@@ -157,21 +155,10 @@ export class Frontend {
     private audio: GameAudio,
     private game: GameControls,
   ) {
-    node('mock-banner').hidden = !service.isMock;
-    node('mock-score').onclick = () => {
-      service.addMockScore?.();
-      window.location.reload();
-    };
-    node('mock-buy').onclick = () => this.open('buy');
-    node('mock-reset').onclick = () => {
-      service.resetMock?.();
-      window.location.reload();
-    };
     node('play').onclick = () => void this.prepare(node('play'));
     node('result-sync').onclick = () => void game.retryResult?.();
     node('ready-start').onclick = () => void game.start();
     node('retry').onclick = () => void this.prepare(node('retry'));
-    node('dev-lives').onclick = () => void this.grantTestLives();
     node('home-button').onclick = () => {
       this.navigationVersion++;
       game.go('HOME');
@@ -248,21 +235,12 @@ export class Frontend {
     node('attempt-count').textContent = String(player.attempts);
     node('result-attempts').textContent = String(player.attempts);
     node('result-attempts').parentElement?.classList.toggle('empty', player.attempts === 0);
-    node('retry').textContent =
-      this.service.isGuest || player.attempts ? 'ДАХИН ТОГЛОХ' : 'АМЬ АВАХ';
+    node('retry').textContent = player.attempts ? 'ДАХИН ТОГЛОХ' : 'АМЬ АВАХ';
     node('best-label').textContent = 'ӨНДӨР';
     node('best').textContent = String(player.best);
     const showAttempts = this.game.phase === 'READY' || this.game.phase === 'PLAYING';
-    node('attempt-bar').hidden = this.service.isGuest || !showAttempts;
-    node('result-attempts').parentElement!.hidden = Boolean(this.service.isGuest);
+    node('attempt-bar').hidden = !showAttempts;
     node('result-total-score').textContent = String(player.total);
-    node('result-total').hidden = Boolean(this.service.isGuest);
-    node('guest-note').hidden = !this.service.isGuest;
-    node('dev-lives').hidden = !this.service.canGrantTestLives;
-    node('dev-lives').textContent = `+10 ТЕСТ АМЬ · НЭМЭЛТ ${player.lives ?? 0}`;
-    (node('dev-lives') as HTMLButtonElement).disabled = this.busy;
-    for (const panel of ['stats', 'gifts', 'lives'])
-      node(`${panel}-open`).hidden = Boolean(this.service.isGuest);
     node('scene-back').hidden = this.game.phase === 'HOME';
     node('music-toggle').setAttribute('aria-pressed', String(this.audio.music));
     const waiting = this.busy || Boolean(this.game.starting);
@@ -296,10 +274,7 @@ export class Frontend {
       if (navigationVersion !== this.navigationVersion || document.hidden) return;
       const player = this.service.snapshot();
       this.refresh();
-      if (this.service.isGuest) {
-        this.close(true);
-        this.game.go('READY');
-      } else if (player.nicknameRequired) this.open('nickname', trigger);
+      if (player.nicknameRequired) this.open('nickname', trigger);
       else if (!player.tournament) this.notify('Одоогоор тэмцээн явагдаагүй байна.');
       else if (!player.attempts) this.open('buy-warning', trigger);
       else {
@@ -326,9 +301,8 @@ export class Frontend {
     node('result-reason').textContent = reasons[result.reason] ?? '';
     const statuses = {
       PENDING: 'Дүн илгээж байна…',
-      ACCEPTED: this.service.isMock ? 'Туршилтын дүнд бүртгэгдлээ' : 'Серверт бүртгэгдлээ',
+      ACCEPTED: 'Серверт бүртгэгдлээ',
       REJECTED: 'Оноог сервер хүлээн авсангүй',
-      LOCAL: 'Зочны тоглолт · оноо зөвхөн энэ удаагийн нээлтэд',
     };
     node('result-status').textContent = statuses[result.verification];
     node('result-sync').hidden = result.verification !== 'PENDING';
@@ -539,8 +513,6 @@ export class Frontend {
       return;
     }
     this.panel = null;
-    // Remove the iframe so YouTube playback stops when the modal closes.
-    this.content.querySelector('.gift-video-frame')?.remove();
     this.overlay.querySelector('.purchase-preview')?.remove();
     this.navigationVersion++;
     this.setModalVisible(false);
@@ -725,8 +697,6 @@ export class Frontend {
     return status + more || '<p class="empty-state">Амийн түүх одоогоор алга.</p>';
   }
   private rulesContent() {
-    if (this.service.isGuest)
-      return `<section class="rules-block yellow"><h3>ЗОЧНЫ ТОГЛОЛТ</h3><p>Нэвтрэхгүйгээр шууд тоглоно. Нэг хос хоолойг давах бүрд 1 оноо авна. Оноо өсөхөд хурд нэмэгдэнэ. Нэг тоглолт 15 минут хүртэл үргэлжилнэ.</p><p>Оноо зөвхөн энэ нээлтэд хадгалагдана. Серверийн чансаа, шагнал, амь болон худалдан авалтад тооцогдохгүй. Загваруудыг энд түр сонгон туршиж болно.</p></section>`;
     const price = this.service.price?.pointsPerLife;
     const purchases = `<div><span>${price === undefined ? '—' : price.toLocaleString('mn-MN')} SONO POINT</span><strong>+1</strong></div>`;
     const lifeRows = earnedLifeRules
@@ -842,11 +812,7 @@ export class Frontend {
         break;
       }
       case 'buy-warning':
-        this.content.innerHTML = this.service.isMock
-          ? `<section class="feedback"><h3>ТОГЛОХ ЭРХ ДУУСЛАА</h3><p>Туршилтын амь нэмэх эсвэл туршилтын point-оор авах боломжтой.</p><button class="small-button" data-action="grant-test-lives">+10 ТЕСТ АМЬ</button><button class="small-button" data-action="open-buy">ТЕСТ POINT-ООР АВАХ</button></section>`
-          : this.service.canGrantTestLives
-            ? `<section class="feedback"><h3>ТОГЛОХ ЭРХ ДУУСЛАА</h3><p>Тест тоглогчдоо 10 амь нэмнэ үү.</p><button class="small-button" data-action="grant-test-lives">+10 ТЕСТ АМЬ</button></section>`
-            : `<section class="feedback"><h3>АНХААР!</h3><p>ТА ДАХИН ТОГЛОХ ЭРХ АВАХЫН ТУЛД SONO ПОЙНТООР АМЬ АВНА УУ.</p><div class="exchange-icon">${image('final/exchange.svg')}</div><button class="small-button" data-action="open-buy">ОК</button></section>`;
+        this.content.innerHTML = `<section class="feedback"><h3>АНХААР!</h3><p>ТА ДАХИН ТОГЛОХ ЭРХ АВАХЫН ТУЛД SONO ПОЙНТООР АМЬ АВНА УУ.</p><div class="exchange-icon">${image('final/exchange.svg')}</div><button class="small-button" data-action="open-buy">ОК</button></section>`;
         break;
       case 'lives':
         this.content.innerHTML = this.ledgerContent();
@@ -874,9 +840,6 @@ export class Frontend {
         break;
       case 'gifts':
         this.content.innerHTML = `<section class="gift-block"><h3>НИЙТ ӨДРИЙН ЯЛАГЧИД</h3><div class="gift-prizes">${[2.5, 2, 1.5, 1, 0.5].map((grams, index) => `<div class="gift-prize">${medal(index + 1)}<span>${index + 1} БАЙР</span>${image('fine-gold/gold-bar.svg', 'gold-bar')}<span>${grams.toFixed(1)} ГР<br />АЛТ</span></div>`).join('')}</div></section><section class="gift-block daily-gift"><h3>НЭГ ӨДРИЙН ЯЛАГЧИД</h3><div class="daily-prize"><div>${medal(1)}<span>1 БАЙР</span></div><div>${image('fine-gold/gold-bar.svg', 'gold-bar')}<span>0.5 ГР АЛТ</span></div></div></section><div class="gift-actions"><button class="small-button" data-action="see-gifts">БЭЛЭГ ХАРАХ</button><button class="small-button" data-action="see-guide">ЗААВАР ҮЗЭХ</button></div>`;
-        break;
-      case 'gift-video':
-        this.content.innerHTML = `<section class="gift-video-content"><div class="gift-video-frame"><iframe src="https://www.youtube-nocookie.com/embed/q8edb6pi5GQ?start=346&playsinline=1&rel=0" title="Бэлгийн танилцуулга видео" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowfullscreen></iframe></div><button class="small-button gift-youtube-button" data-action="open-gift-youtube">▶ YOUTUBE ДЭЭР ҮЗЭХ ↗</button><p class="gift-video-description">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p><button class="gift-back-button" data-action="back-to-gifts">← БЭЛЭГ РҮҮ БУЦАХ</button></section>`;
         break;
       case 'buy': {
         // The host checks the balance again at its PIN screen; a known shortfall only saves a trip.
@@ -1055,44 +1018,14 @@ export class Frontend {
       this.content.querySelector<HTMLButtonElement>('button:not([disabled])')?.focus();
     }
   }
-  private async grantTestLives() {
-    if (this.busy || !this.service.canGrantTestLives || !this.service.grantTestLives) return;
-    this.busy = true;
-    this.refresh();
-    try {
-      await this.service.grantTestLives();
-      if (this.panel === 'buy-warning') this.close(true);
-      this.notify(
-        this.service.isMock ? '10 туршилтын амь нэмэгдлээ.' : '10 тест амь серверт нэмэгдлээ.',
-      );
-    } catch (error) {
-      this.notify(errorMessage(error));
-    } finally {
-      this.busy = false;
-      this.refresh();
-      if (this.panel) this.render();
-    }
-  }
   private action(action: string, value?: string) {
     const focusAction = action;
     if (action === 'see-gifts') {
-      this.open('gift-video');
-      return;
-    }
-    if (action === 'back-to-gifts') {
-      this.open('gifts');
-      return;
-    }
-    if (action === 'open-gift-youtube') {
-      void openExternalUrl('https://www.youtube.com/watch?v=q8edb6pi5GQ&t=346s').catch((error) =>
-        this.notify(errorMessage(error)),
-      );
+      void openExternalUrl(GIFT_PRODUCTS_URL).catch((error) => this.notify(errorMessage(error)));
       return;
     }
     if (action === 'see-guide') {
-      void openExternalUrl('https://www.youtube.com').catch((error) =>
-        this.notify(errorMessage(error)),
-      );
+      void openExternalUrl(GUIDE_URL).catch((error) => this.notify(errorMessage(error)));
       return;
     } else if (action === 'music') {
       this.audio.setMusic(!this.audio.music);
@@ -1113,9 +1046,6 @@ export class Frontend {
     else if (action === 'plus') this.quantity = Math.min(this.maxQuantity, this.quantity + 1);
     else if (action === 'buy-attempts') {
       this.beginOrder({ kind: 'attempts', quantity: this.quantity }, 'buy');
-      return;
-    } else if (action === 'grant-test-lives') {
-      void this.grantTestLives();
       return;
     } else if (action === 'approve') {
       void this.approveOrder();

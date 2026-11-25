@@ -14,20 +14,15 @@ type Bridge = {
 } & Partial<Record<HostMethod, (params: object) => Promise<unknown> | unknown>>;
 
 /** The only pages the host may open for the mini app; the host keeps the same allowlist. */
-export const EXTERNAL_URLS = [
-  'https://www.finegold.mn/products',
-  'https://www.youtube.com',
-  'https://www.youtube.com/watch?v=q8edb6pi5GQ&t=346s',
-] as const;
+export const GIFT_PRODUCTS_URL = 'https://www.finegold.mn/products';
+export const GUIDE_URL =
+  'https://onelink.to/xnesvy?fbclid=IwZXh0bgNhZW0CMTAAcGRvZgVicmlkETFWRzhzZHcwRWc4Y2JwbldOc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABH_KQM3dP0BaxI85LD1mw0oH3_PKbeL_k3ohDTA5fiSYlBh7zs_rIeh1JAyPj_aem_156NS9ix7M8TsJKF5gyQIg';
+export const EXTERNAL_URLS = [GIFT_PRODUCTS_URL, GUIDE_URL] as const;
 export type ExternalUrl = (typeof EXTERNAL_URLS)[number];
 
 function bridge(): Bridge | undefined {
   const value = (window as typeof window & { SonoBridge?: unknown }).SonoBridge;
   return value && typeof value === 'object' ? (value as Bridge) : undefined;
-}
-
-export function hasHost() {
-  return Boolean(bridge());
 }
 
 /** With `call` every documented method exists; a direct bridge shows what it implements. */
@@ -85,10 +80,6 @@ export async function pointBalance(): Promise<number | null> {
 /** Keep third-party pages outside the game WebView so a return keeps the run state. */
 export async function openExternalUrl(url: ExternalUrl) {
   if (!EXTERNAL_URLS.includes(url)) throw new ApiError('HOST_EXTERNAL_URL_UNAVAILABLE');
-  if (!hasHost()) {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    return;
-  }
   if (!hostSupports('openExternalUrl')) throw new ApiError('HOST_EXTERNAL_URL_UNAVAILABLE');
   try {
     await callHost('openExternalUrl', { url });

@@ -1,6 +1,6 @@
 # Flappy SONO vendor project instructions
 
-This checkout is the clean, standalone WebView game client. The original working project is kept separately. This handoff has no mock-account, test-fixture, or screenshot-gallery runtime.
+This checkout is the standalone production WebView game client. The Player API and SONO host are required for authenticated play.
 
 ## Product and security rules
 
@@ -14,7 +14,7 @@ This checkout is the clean, standalone WebView game client. The original working
 ## Code and release rules
 
 - Keep the mini app portable for vendor Flutter WebView hosting. Preserve the `SonoBridge` contract in `src/services/HostBridge.ts`.
-- Follow the API contract in `docs/api/flappy-player-api.json` (a copy of the backend's export; refresh it, do not edit it).
+- Follow the production API contract in `docs/api/flappy-player-api.json`. Refresh it from the backend export after API changes, excluding backend-only development routes.
 - Runtime images and fonts must be registered in `build/runtime-assets.mjs` and loaded with `assetUrl()` where applicable. The production build hashes assets and emits `release-manifest.json`.
 - Preserve deterministic server-seeded gameplay, fixed-step simulation, pooled obstacles, adaptive render limits, background termination, responsive geometry, and reduced rendering while static.
-- Before handoff run `npm run format:check` and `npm run build`. The vendor package intentionally has no mock fixtures or test suite.
+- Before handoff run `npm run format:check` and `npm run build`. The vendor package has no local entitlement fixtures or test suite.

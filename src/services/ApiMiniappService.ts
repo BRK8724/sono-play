@@ -94,7 +94,6 @@ type Start = {
 };
 type Options = {
   client: ApiClient;
-  testLivesEnabled?: boolean;
   /** Resolves with the host's outcome: COMPLETED, CANCELLED, FAILED or UNKNOWN. */
   payWithPoints?: (request: { orderId: string }) => Promise<unknown>;
   paymentAvailable?: () => boolean;
@@ -192,20 +191,6 @@ export class ApiMiniappService implements MiniappService {
   constructor(options: Options) {
     this.options = options;
     this.now = options.now ?? (() => performance.now());
-  }
-  get canGrantTestLives() {
-    return this.options.testLivesEnabled === true;
-  }
-  async grantTestLives() {
-    if (!this.canGrantTestLives) throw new ApiError('FORBIDDEN');
-    const response = await this.options.client.request<{ lives: number }>(
-      'POST',
-      '/api/v1/dev/lives',
-      { lives: 10 },
-    );
-    if (!Number.isSafeInteger(response?.lives) || response.lives < 0)
-      throw new ApiError('INVALID_RESPONSE');
-    await this.refresh();
   }
   get canPay() {
     return this.options.paymentAvailable?.() ?? Boolean(this.options.payWithPoints);

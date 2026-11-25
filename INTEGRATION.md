@@ -24,14 +24,13 @@ PIN entry and Core credentials stay in native/Core code.
 
 ## External links
 
-The gift and guide buttons call `openExternalUrl({ url })`. The host opens exactly these URLs (`EXTERNAL_URLS` in `src/services/HostBridge.ts`) with `url_launcher` in an in-app browser view or the external browser, and refuses any other: `https://www.finegold.mn/products`, `https://www.youtube.com`, `https://www.youtube.com/watch?v=q8edb6pi5GQ&t=346s`. The game WebView stays mounted, so returning to SONO keeps its current screen. If the host lacks the method, the page shows a message and does not navigate the game WebView away. In a normal browser preview the buttons open a new tab. The WebView navigation delegate should still cancel any navigation of the game WebView to another origin. A sample native pattern is:
+The gift and guide buttons call `openExternalUrl({ url })`. The host opens exactly the two URLs in `EXTERNAL_URLS` (`src/services/HostBridge.ts`) with `url_launcher` in an in-app browser view or the external browser, and refuses any other. **Бэлэг харах** opens `https://www.finegold.mn/products`; **Заавар үзэх** opens the supplied `https://onelink.to/xnesvy?...` link, including its `fbclid` query. The game WebView stays mounted, so returning to SONO keeps its current screen. If the host lacks the method, the page shows a message and does not navigate the game WebView away. The WebView navigation delegate should still cancel any navigation of the game WebView to another origin. A sample native pattern is:
 
 ```dart
 Future<NavigationDecision> onNavigationRequest(NavigationRequest request) async {
   const allowed = {
     'https://www.finegold.mn/products',
-    'https://www.youtube.com',
-    'https://www.youtube.com/watch?v=q8edb6pi5GQ&t=346s',
+    'https://onelink.to/xnesvy?fbclid=IwZXh0bgNhZW0CMTAAcGRvZgVicmlkETFWRzhzZHcwRWc4Y2JwbldOc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABH_KQM3dP0BaxI85LD1mw0oH3_PKbeL_k3ohDTA5fiSYlBh7zs_rIeh1JAyPj_aem_156NS9ix7M8TsJKF5gyQIg',
   };
   if (allowed.contains(request.url)) {
     await launchUrl(Uri.parse(request.url), mode: LaunchMode.inAppBrowserView);
@@ -43,15 +42,15 @@ Future<NavigationDecision> onNavigationRequest(NavigationRequest request) async 
 }
 ```
 
-Register the same allowlist in the native `openExternalUrl` implementation. Do not let arbitrary URLs from JavaScript become native intents. The guide URL currently points to the YouTube home page as requested; replace it with a specific SONO instruction video when available, in both lists.
+Register the same allowlist in the native `openExternalUrl` implementation. Do not let arbitrary URLs from JavaScript become native intents. The guide's OneLink redirect may continue to a browser or app store; handle that redirect in the external view, not in the game WebView.
 
 ## Game results and the network
 
 A flight needs no connection. The result (`score`, `durationMs`) is measured once at game over and sent then; if that fails (offline, app sent to the background, timeout), the same values are sent again when the page is visible or the network returns, and the server accepts a late result within the session's 15 minutes. Losing the connection mid-flight only shows a notice. A flight ends 30 s before the server's 15-minute session limit so the result still arrives in time.
 
-The normal build always uses the Player API. It exchanges a fresh launch token with `POST /api/v1/auth/exchange`, holds the returned access token in page memory, and refreshes or exchanges a new launch token after expiry. Without a launch-token provider, the app reports that the SONO host is required. Local practice is explicit with `?practice=1`; its scores do not reach the API. For a backend running its mock profile, a separately built local preview can set `VITE_API_TEST_MOCK_AUTH=1`. That preview generates a stable anonymous test player and one-time mock launch tokens, then uses the real exchange and subsequent Player API routes. Each new tester chooses a nickname through `PUT /api/v1/me/nickname` before playing. The preview shows a `+10 ТЕСТ АМЬ` button that calls the backend's mock-only `POST /api/v1/dev/lives`. Ordinary refresh retains the current mock player and score. Never enable mock auth in a production build.
+The frontend uses the Player API for every authenticated flow. It exchanges a fresh launch token from the SONO host with `POST /api/v1/auth/exchange`, holds the returned access token in page memory, and refreshes or exchanges a new launch token after expiry. Without a launch-token provider, the app reports that the SONO host is required. Each new player chooses a nickname through `PUT /api/v1/me/nickname` before playing. There is no guest or local account path.
 
-The Player API contract is in `docs/api/flappy-player-api.json` (exported from the backend; refresh it from the backend repository's `docs/openapi/` after every API change), with requests in `docs/api/flappy-player-api.postman_collection.json`. See `README_BACKEND.md`, `docs/SECURITY_SPEC.md`, and `docs/VENDOR_INTEGRATION_AGENDA.mn.md` for API ownership, hosting, and open decisions.
+The production Player API contract is in `docs/api/flappy-player-api.json` (derived from the backend export without development-only routes; refresh it after every API change). See `README_BACKEND.md`, `docs/SECURITY_SPEC.md`, and `docs/PRODUCTION_DEPLOYMENT.mn.md` for API ownership, hosting, and release requirements.
 
 ## WebView size and safe areas
 

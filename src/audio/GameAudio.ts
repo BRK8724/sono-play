@@ -7,7 +7,7 @@ const EFFECTS = {
   getBird: { file: 'assets/sono/audio/get-bird.mp3', volume: 0.4 },
 } as const;
 export type EffectName = keyof typeof EFFECTS;
-/** AAC 64 kbps (~1 MB, from the 3 MB background-music.mp3 kept as source), streamed rather than decoded. */
+/** AAC 64 kbps (~1 MB), streamed rather than decoded. */
 const MUSIC_FILE = 'assets/sono/audio/background-music.m4a';
 const MUSIC_VOLUME = 0.03;
 

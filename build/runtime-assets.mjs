@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 
 const virtualId = 'virtual:sono-runtime-assets';
 const resolvedVirtualId = '\0' + virtualId;
 
-// Keep active runtime files explicit. Original artwork and reference exports stay in public/.
+// Only files used by the production UI are emitted into the release.
 const runtimeFiles = [
   'assets/sono/menu-background-winter.webp',
   'assets/sono/sono-body.png',
@@ -36,6 +36,20 @@ const runtimeFiles = [
   'assets/sono/pipe-night-lower-cap.webp',
   'assets/sono/pipe-night-upper-cap.webp',
   'assets/fine-gold/sponser-finegold.png',
+  'assets/fine-gold/attention.webp',
+  'assets/fine-gold/gold-bar.svg',
+  'assets/fine-gold/life-history.svg',
+  'assets/fine-gold/logo-flappy.webp',
+  'assets/fine-gold/logo-sono.webp',
+  'assets/fine-gold/music.svg',
+  'assets/fine-gold/pilot.webp',
+  'assets/fine-gold/rank-1.webp',
+  'assets/fine-gold/rank-2.webp',
+  'assets/fine-gold/rank-3.webp',
+  'assets/fine-gold/rank-4.webp',
+  'assets/fine-gold/rank-5.webp',
+  'assets/fine-gold/skin.webp',
+  'assets/fine-gold/winner-logo.webp',
   'assets/final/coin-2a011ea2.png',
   'assets/final/effects.svg',
   'assets/final/emoji-1-55041f66.png',
@@ -53,12 +67,6 @@ const runtimeFiles = [
 
 function hash(source) {
   return createHash('sha256').update(source).digest('hex');
-}
-
-function filesIn(publicDir, directory, extension) {
-  return readdirSync(join(publicDir, directory), { withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(extension))
-    .map((entry) => `${directory}/${entry.name}`);
 }
 
 export function versionedAssetPath(original, source) {
@@ -96,11 +104,7 @@ export function runtimeAssetsPlugin(options = {}) {
     },
     configResolved(resolved) {
       config = resolved;
-      const files = options.files ?? [
-        ...runtimeFiles,
-        ...filesIn(config.publicDir, 'assets/fine-gold', '.webp'),
-        ...filesIn(config.publicDir, 'assets/fine-gold', '.svg'),
-      ];
+      const files = options.files ?? runtimeFiles;
       entries = [...new Set(files)].sort().map((original) => {
         if (original.startsWith('/') || original.split('/').includes('..'))
           throw new Error(`Invalid runtime asset path: ${original}`);

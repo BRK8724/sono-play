@@ -1,6 +1,6 @@
 # SONO Play байршуулалт ба Flutter / Play / Core холболт
 
-2026-11-18-ны код болон Player API гэрээнд үндэслэв. Доорх domain, hosting path болон архитектурын сонголтууд нь хэрэгжүүлэх санал бүхий жишээ. Бодит DNS, орчин, эрх болон сервер хоорондын гэрээг талууд нийлүүлнэ.
+Production frontend болон Player API гэрээнд үндэслэв. Доорх domain, hosting path болон архитектурын сонголтууд нь хэрэгжүүлэх санал бүхий жишээ. Бодит DNS, орчин, эрх болон сервер хоорондын гэрээг талууд нийлүүлнэ.
 
 | Хэсэг | Санал болгосон жишээ байршил | Хариуцах тал |
 |---|---|---|
@@ -50,7 +50,7 @@ window.SonoBridge.call(method: string, params: object): Promise<object>
 
 Ижил method-уудыг шууд функц хэлбэрээр (`window.SonoBridge.getLaunchToken(params)`) өгсөн host-ийг ч web хүлээн авна. Өөр global (жишээ нь `window.bridge`) уншихгүй. Vendor native channel, Promise resolve/reject, алдаа болон цуцлалтын хариуг хэрэгжүүлнэ. Bridge-ийг web authentication эхлэхээс өмнө бэлэн болгоно. Зөвхөн `onPageFinished` дээр нэмэхэд эхний auth дуудлагатай уралдах боломжтой.
 
-Flutter нь нэвтэрсэн хэрэглэгчид зориулсан богино хугацаатай нэг удаагийн launch assertion авна. Web түүнийг `POST /api/v1/auth/exchange` руу дамжуулж game access/refresh token авна. Core-ийн assertion олгох, Play-ийн баталгаажуулах бодит гэрээ, issuer/audience, хугацаа, replay хамгаалалт болон түлхүүрийн солилцоог хоёр backend баг эцэслэх шаардлагатай. Native/Core credential болон HMAC secret сервер/native талд хадгалагдана. Development болон production host хоёулаа `SonoBridge` launch token өгөх шаардлагатай; browser mock identity байхгүй.
+Flutter нь нэвтэрсэн хэрэглэгчид зориулсан богино хугацаатай нэг удаагийн launch assertion авна. Web түүнийг `POST /api/v1/auth/exchange` руу дамжуулж game access/refresh token авна. Core-ийн assertion олгох, Play-ийн баталгаажуулах бодит гэрээ, issuer/audience, хугацаа, replay хамгаалалт болон түлхүүрийн солилцоог хоёр backend баг эцэслэх шаардлагатай. Native/Core credential болон HMAC secret сервер/native талд хадгалагдана. Development болон production host хоёулаа `SonoBridge` launch token өгөх шаардлагатай; browser-д нэвтрэх өөр зам байхгүй.
 
 Vendor safe-area-г CSS pixel-ээр `window.__SONO_SAFE_AREA__ = {top,right,bottom,left}` хэлбэрээр өгч, өөрчлөгдөхөд `sono-safe-area` event илгээнэ. Web нь `visibilitychange`/`pagehide`-ийг ажигладаг. Native app lifecycle, WebView хаах/буцах үйлдэл, серверийн session дуусгах гэрээг бодит Flutter төхөөрөмж дээр уялдуулж шалгана. Production Flutter wrapper болон тусгай native termination hook-ийн хэрэгжилт/баталгаажуулалт хүлээгдэж байна.
 

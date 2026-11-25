@@ -19,7 +19,6 @@ import { AdaptivePerformance } from './adaptivePerformance';
 import { birdBodyDisplaySize, birdBodyOffsetY, SONO_SHEET_SIZE } from './birdAppearance';
 import { backgroundPeriod, backgroundVariant } from './gameRules';
 import { assetUrl } from './assets';
-import { installPerformanceDiagnostics } from './performance';
 import {
   backdropTextureKey,
   createFrameScheduler,
@@ -127,7 +126,6 @@ class Scene extends Phaser.Scene {
   private birdRotation = 0;
   private previousBirdRotation = 0;
   private smoke = new Set<Phaser.GameObjects.Arc>();
-  backdropBuilds = 0;
   private startGeneration = 0;
   private canceledStartReason: 'APP_BACKGROUND' | 'EXIT' | 'CONNECTION_LOST' | null = null;
   private period = backgroundPeriod();
@@ -230,7 +228,6 @@ class Scene extends Phaser.Scene {
     const key = backdropTextureKey(this.backgroundId, width, height, ground);
     if (key === this.backdropKey && this.panorama) return;
     this.backdropKey = key;
-    this.backdropBuilds++;
     if (this.panorama) {
       for (const sprite of [this.panorama.sky, ...this.panorama.ground]) sprite.destroy();
       this.panorama.texture.remove('sky-panorama');
@@ -914,7 +911,6 @@ class Scene extends Phaser.Scene {
 }
 const scene = new Scene();
 frontend = new Frontend(service, audio, scene);
-if (import.meta.env.DEV) Object.assign(window, { __SONO_SCENE__: scene });
 const game = new Phaser.Game({
   type: Phaser.CANVAS,
   parent: 'game',
@@ -931,20 +927,6 @@ const game = new Phaser.Game({
   },
   scene,
 });
-if (import.meta.env.DEV)
-  installPerformanceDiagnostics(game, () => ({
-    phase: scene.phase,
-    backdropBuilds: scene.backdropBuilds,
-    poolSize: scene.pool.length,
-    activePipes: scene.pipes.length,
-    textures: game.textures.getTextureKeys().length,
-    rawFrameMs: Math.round(game.loop.rawDelta * 100) / 100,
-    gameFrameMs: Math.round(game.loop.delta * 100) / 100,
-    clockSmoothing: game.loop.smoothStep,
-    backingRatio: game.canvas.width / Math.max(1, game.canvas.clientWidth),
-    qualityTier: adaptivePerformance.profile.tier,
-    speedFactor: scene.actualSpeedFactor,
-  }));
 let fitting = false;
 const resizeFrames = createFrameScheduler(fit);
 function scheduleResize() {
@@ -1057,7 +1039,7 @@ window.addEventListener('pageshow', () => {
 // A flight needs no connection: the result is sent at game over and again once the network is back,
 // and the server accepts a late result. So losing the connection only shows a notice.
 window.addEventListener('offline', () => {
-  if (!service.isGuest) ui.offline.hidden = false;
+  ui.offline.hidden = false;
 });
 window.addEventListener('online', () => {
   ui.offline.hidden = true;

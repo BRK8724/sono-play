@@ -8,10 +8,7 @@ RUN npm ci --no-audit --no-fund
 COPY . .
 # Empty: the Player API is on the same origin; nginx proxies /api/v1/.
 ARG VITE_API_BASE_URL=
-# 1 only against a backend in its mock profile (a stack without the SONO app). Never for a release.
-ARG VITE_API_TEST_MOCK_AUTH=
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
-    VITE_API_TEST_MOCK_AUTH=$VITE_API_TEST_MOCK_AUTH
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build -- --base=/sono-play/
 
 FROM nginx:1.27-alpine

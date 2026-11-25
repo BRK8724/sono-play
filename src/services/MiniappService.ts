@@ -28,7 +28,7 @@ export type PurchaseOrder = { kind: 'attempts'; quantity: number };
 export type RunResult = {
   score: number;
   reason: string;
-  verification: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'LOCAL';
+  verification: 'PENDING' | 'ACCEPTED' | 'REJECTED';
   rejectReason?: string;
   newlyUnlocked?: string[];
 };
@@ -69,9 +69,6 @@ export type LifeOrder = {
   expiresAt: string;
 };
 export interface MiniappService {
-  readonly isGuest?: boolean;
-  readonly isMock?: boolean;
-  readonly canGrantTestLives?: boolean;
   readonly gameConfig?: GameConfig;
   readonly gameSeed?: string;
   readonly runDeadline?: number;
@@ -93,9 +90,6 @@ export interface MiniappService {
   setNickname?(nickname: string): Promise<void>;
   checkOrder?(): Promise<LifeOrder>;
   payOrder?(): Promise<void>;
-  grantTestLives?(): Promise<void>;
-  addMockScore?(): void;
-  resetMock?(): void;
   snapshot(): PlayerSnapshot;
   startRun(): Promise<string>;
   finishRun(runId: string, score: number, reason: string): RunResult | Promise<RunResult>;
