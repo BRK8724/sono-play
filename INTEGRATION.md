@@ -24,13 +24,13 @@ PIN entry and Core credentials stay in native/Core code.
 
 ## External links
 
-The gift and guide buttons call `openExternalUrl({ url })`. The host opens exactly the two URLs in `EXTERNAL_URLS` (`src/services/HostBridge.ts`) with `url_launcher` in an in-app browser view or the external browser, and refuses any other. **Бэлэг харах** opens `https://www.finegold.mn/products`; **Заавар үзэх** opens the supplied `https://onelink.to/xnesvy?...` link, including its `fbclid` query. The game WebView stays mounted, so returning to SONO keeps its current screen. If the host lacks the method, the page shows a message and does not navigate the game WebView away. The WebView navigation delegate should still cancel any navigation of the game WebView to another origin. A sample native pattern is:
+The gift and guide buttons call `openExternalUrl({ url })`. The host opens exactly the two URLs in `EXTERNAL_URLS` (`src/services/HostBridge.ts`) with `url_launcher` in an in-app browser view or the external browser, and refuses any other. **Бэлэг харах** opens `https://www.finegold.mn/products`; **Заавар үзэх** opens `https://onelink.to/xnesvy` (no query: the host compares the whole URL). The game WebView stays mounted, so returning to SONO keeps its current screen. If the host lacks the method, the page shows a message and does not navigate the game WebView away. The WebView navigation delegate should still cancel any navigation of the game WebView to another origin. A sample native pattern is:
 
 ```dart
 Future<NavigationDecision> onNavigationRequest(NavigationRequest request) async {
   const allowed = {
     'https://www.finegold.mn/products',
-    'https://onelink.to/xnesvy?fbclid=IwZXh0bgNhZW0CMTAAcGRvZgVicmlkETFWRzhzZHcwRWc4Y2JwbldOc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABH_KQM3dP0BaxI85LD1mw0oH3_PKbeL_k3ohDTA5fiSYlBh7zs_rIeh1JAyPj_aem_156NS9ix7M8TsJKF5gyQIg',
+    'https://onelink.to/xnesvy',
   };
   if (allowed.contains(request.url)) {
     await launchUrl(Uri.parse(request.url), mode: LaunchMode.inAppBrowserView);

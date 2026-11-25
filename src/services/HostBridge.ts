@@ -15,8 +15,7 @@ type Bridge = {
 
 /** The only pages the host may open for the mini app; the host keeps the same allowlist. */
 export const GIFT_PRODUCTS_URL = 'https://www.finegold.mn/products';
-export const GUIDE_URL =
-  'https://onelink.to/xnesvy?fbclid=IwZXh0bgNhZW0CMTAAcGRvZgVicmlkETFWRzhzZHcwRWc4Y2JwbldOc3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABH_KQM3dP0BaxI85LD1mw0oH3_PKbeL_k3ohDTA5fiSYlBh7zs_rIeh1JAyPj_aem_156NS9ix7M8TsJKF5gyQIg';
+export const GUIDE_URL = 'https://onelink.to/xnesvy';
 export const EXTERNAL_URLS = [GIFT_PRODUCTS_URL, GUIDE_URL] as const;
 export type ExternalUrl = (typeof EXTERNAL_URLS)[number];
 
